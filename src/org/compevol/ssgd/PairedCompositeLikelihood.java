@@ -32,10 +32,8 @@ import dr.evolution.coalescent.ConstantPopulation;
 import dr.evolution.tree.Tree;
 import dr.evolution.util.Taxon;
 import dr.evolution.util.Units;
-import dr.evomodel.coalescent.PiecewisePopulationModel;
 import dr.evomodel.sitemodel.SiteModel;
 import dr.evomodel.substmodel.FrequencyModel;
-import dr.evomodel.substmodel.HKY;
 import dr.evomodel.treelikelihood.TipStatesModel;
 import dr.inference.model.CompoundModel;
 import dr.inference.model.Likelihood;
@@ -53,114 +51,96 @@ public class PairedCompositeLikelihood extends Likelihood.Abstract {
 
     private final PatternList patterns;
     private final SiteModel siteModel;
-    private final FrequencyModel frequencies;
-    private final HKY hky;
+    private final Integrator integrator;
     private final TipStatesModel tipStatesModel;
-    private final PiecewisePopulationModel populationModel;
-    private final int taxonCount;
 
-    public PairedCompositeLikelihood(final PatternList patterns, final SiteModel siteModel, final TipStatesModel tipStatesModel, PiecewisePopulationModel populationModel) {
+    public PairedCompositeLikelihood(final PatternList patterns, final SiteModel siteModel, final Integrator integrator, final TipStatesModel tipStatesModel) {
         super(new CompoundModel("PairedCompositeLikelihoodModel"));
         final CompoundModel model = (CompoundModel) getModel();
         this.patterns = patterns;
         this.siteModel = siteModel;
         model.addModel(siteModel);
-        frequencies = siteModel.getFrequencyModel();
-        hky = (HKY) siteModel.getSubstitutionModel();
+        this.integrator = integrator;
+        model.addModel(integrator);
         this.tipStatesModel = tipStatesModel;
         model.addModel(tipStatesModel);
-        this.populationModel = populationModel;
-        model.addModel(populationModel);
-        taxonCount = patterns.getTaxonCount();
 
         // Hack involving a fake tree to set up the tip states model
         final ConstantPopulation constant = new ConstantPopulation(Units.Type.SUBSTITUTIONS);
         constant.setN0(1);
         final Tree fakeTree = new CoalescentSimulator().simulateTree(patterns, constant);
         tipStatesModel.setTree(fakeTree);
-        for (int i = 0; i < fakeTree.getExternalNodeCount(); ++i) {
-            final Taxon taxon = fakeTree.getNodeTaxon(fakeTree.getExternalNode(i));
-            tipStatesModel.setStates(patterns, patterns.getTaxonIndex(taxon), i, taxon.getId());
-        }
+        for (int i = 0; i < patterns.getTaxonCount(); ++i)
+            tipStatesModel.setStates(patterns, i, i, patterns.getTaxon(i).getId());
     }
 
     @Override
     protected double calculateLogLikelihood() {
+
         double logL = 0.0;
 
-        for (int i = 0; i < patterns.getPatternCount(); ++i) {
+        final int taxonCount = patterns.getTaxonCount();
+        final int patternCount = patterns.getPatternCount();
+        final int stateCount = siteModel.getSubstitutionModel().getDataType().getStateCount();
+
+        final double[][] partials = new double[taxonCount][patternCount * stateCount];
+        for (int i = 0; i < taxonCount; ++i) {
+            tipStatesModel.getTipPartials(i, partials[i]);
+        }
+
+        int l = 0;
+        for (int i = 0; i < patternCount; ++i) {
+
             double patternLogL = 0.0;
-            for (int j = 0; j < taxonCount; ++j)
-                for (int k = j+1; k < taxonCount; ++k)
-                    patternLogL += calculatePairLogLikelihood(j, k);
+
+            for (int j = 0; j < taxonCount; ++j) {
+
+                for (int k = j+1; k < taxonCount; ++k) {
+
+                    final Taxon a = patterns.getTaxon(j);
+                    final double[] aPartial = new double[stateCount];
+                    System.arraycopy(partials[j], l, aPartial, 0, stateCount);
+                    final Taxon b = patterns.getTaxon(k);
+                    final double[] bPartial = new double[stateCount];
+                    System.arraycopy(partials[k], l, bPartial, 0, stateCount);
+
+                    patternLogL += pairLogLikelihood(a, aPartial, b, bPartial);
+
+                }
+
+            }
+
             logL += patternLogL * patterns.getPatternWeight(i);
+            l += stateCount;
         }
 
         return logL;
     }
 
-    private double calculatePairLogLikelihood(final int i, final int j) {
-        // TODO
-        return 0.0;
-    }
+    private double pairLogLikelihood(final Taxon a, final double[] aPartial, final Taxon b, final double[] bPartial) {
 
-    private double beta() {
-        final double kappa = hky.getKappa();
-        final double A = frequencies.getFrequency(0);
-        final double C = frequencies.getFrequency(1);
-        final double G = frequencies.getFrequency(2);
-        final double T = frequencies.getFrequency(3);
-        return 1.0 / (2 * (A + G) * (C + T) + 2 * kappa * (A * G + C * T));
-    }
+        double L = 0.0;
 
-    private double pAA() {
-        // TODO
-        return 0.0;
-    }
+        for (int c = 0; c < siteModel.getCategoryCount(); ++c) {
 
-    private double pAC() {
-        // TODO
-        return 0.0;
-    }
+            final double mu = siteModel.getRateForCategory(c);
 
-    private double pAG() {
-        // TODO
-        return 0.0;
-    }
+            double categoryL = 0.0;
 
-    private double pAT() {
-        // TODO
-        return 0.0;
-    }
+            final int stateCount = siteModel.getSubstitutionModel().getDataType().getStateCount();
+            final FrequencyModel frequencies = siteModel.getFrequencyModel();
 
-    private double pCC() {
-        // TODO
-        return 0.0;
-    }
+            for (int i = 0; i < stateCount; ++i) {
+                for (int j = 0; j < stateCount; ++j) {
+                    categoryL += frequencies.getFrequency(i)* aPartial[i] * bPartial[j] * integrator.probability(i, a.getHeight(), j, b.getHeight(), mu);
+                }
+            }
 
-    private double pCG() {
-        // TODO
-        return 0.0;
-    }
+            L += categoryL * siteModel.getProportionForCategory(c);
+        }
 
-    private double pCT() {
-        // TODO
-        return 0.0;
-    }
+        return Math.log(L);
 
-    private double pGG() {
-        // TODO
-        return 0.0;
-    }
-
-    private double pGT() {
-        // TODO
-        return 0.0;
-    }
-
-    private double pTT() {
-        // TODO
-        return 0.0;
     }
 
     public static final XMLObjectParser PARSER = new AbstractXMLObjectParser() {
@@ -169,12 +149,12 @@ public class PairedCompositeLikelihood extends Likelihood.Abstract {
         public Object parseXMLObject(XMLObject xo) throws XMLParseException {
             return new PairedCompositeLikelihood((PatternList) xo.getChild(PatternList.class),
                     (SiteModel) xo.getChild(SiteModel.class),
-                    (TipStatesModel) xo.getChild(TipStatesModel.class),
-                    (PiecewisePopulationModel) xo.getChild(PiecewisePopulationModel.class));
+                    (Integrator) xo.getChild(Integrator.class),
+                    (TipStatesModel) xo.getChild(TipStatesModel.class));
         }
 
-        final XMLSyntaxRule[] rules = {new ElementRule(PatternList.class), new ElementRule(PatternList.class),
-                new ElementRule(TipStatesModel.class), new ElementRule(PiecewisePopulationModel.class)};
+        final XMLSyntaxRule[] rules = {new ElementRule(PatternList.class), new ElementRule(SiteModel.class),
+                new ElementRule(Integrator.class), new ElementRule(TipStatesModel.class)};
 
         @Override
         public XMLSyntaxRule[] getSyntaxRules() {
