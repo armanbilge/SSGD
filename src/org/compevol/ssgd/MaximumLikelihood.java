@@ -1,5 +1,5 @@
 /*
- * LogLikelihoodFunction.java
+ * Estimate.java
  *
  * SSGD: Serially-Sampled Genome Demographics
  *
@@ -26,11 +26,14 @@
 
 package org.compevol.ssgd;
 
-import dr.inference.model.Likelihood;
-import dr.inference.model.Parameter;
+import dr.math.DifferentialEvolution;
+import dr.math.MachineAccuracy;
 import dr.math.MultivariateFunction;
+import dr.math.MultivariateMinimum;
 import dr.xml.AbstractXMLObjectParser;
+import dr.xml.AttributeRule;
 import dr.xml.ElementRule;
+import dr.xml.Spawnable;
 import dr.xml.XMLObject;
 import dr.xml.XMLObjectParser;
 import dr.xml.XMLParseException;
@@ -39,65 +42,65 @@ import dr.xml.XMLSyntaxRule;
 /**
  * @author Arman Bilge <armanbilge@gmail.com>
  */
-public class LogLikelihoodFunction implements MultivariateFunction {
+public class MaximumLikelihood implements Spawnable {
 
-    private final Likelihood function;
-    private final Parameter variables;
+    private final MultivariateMinimum optimizer;
+    private final MultivariateFunction likelihood;
+    private final double[] initial;
 
-    public LogLikelihoodFunction(final Likelihood function, final Parameter variables) {
-        this.function = function;
-        this.variables = variables;
+    public MaximumLikelihood(final MultivariateFunction likelihood, final double[] initial) {
+        this.likelihood = likelihood;
+        this.initial = initial;
+        optimizer = new DifferentialEvolution(likelihood.getNumArguments());
+    }
+
+    public MaximumLikelihood(final MultivariateFunction likelihood, final double[] initial, final int populationSize) {
+        this.likelihood = likelihood;
+        this.initial = initial;
+        optimizer = new DifferentialEvolution(likelihood.getNumArguments(), populationSize);
     }
 
     @Override
-    public double evaluate(final double... arguments) {
-        for (int i = 0; i < getNumArguments(); ++i)
-            variables.setParameterValue(i, arguments[i]);
-        return function.getLogLikelihood();
+    public boolean getSpawnable() {
+        return true;
     }
 
     @Override
-    public int getNumArguments() {
-        return variables.getSize();
-    }
-
-    @Override
-    public double getLowerBound(final int i) {
-        return variables.getBounds().getLowerLimit(i);
-    }
-
-    @Override
-    public double getUpperBound(final int i) {
-        return variables.getBounds().getUpperLimit(i);
+    public void run() {
+        optimizer.optimize(new NegativeMultivariateFunction(likelihood), initial, MachineAccuracy.EPSILON, MachineAccuracy.EPSILON);
     }
 
     public static final XMLObjectParser PARSER = new AbstractXMLObjectParser() {
 
+        private static final String INITIAL = "initial";
+        private static final String POPULATION_SIZE = "populationSize";
 
         @Override
-        public Object parseXMLObject(XMLObject xo) throws XMLParseException {
-            return new LogLikelihoodFunction((Likelihood) xo.getChild(Likelihood.class), (Parameter) xo.getChild(Parameter.class));
+        public Object parseXMLObject(final XMLObject xo) throws XMLParseException {
+            return null;
         }
 
         @Override
         public XMLSyntaxRule[] getSyntaxRules() {
             return rules;
         }
-        final XMLSyntaxRule[] rules = {new ElementRule(Likelihood.class), new ElementRule(Parameter.class)};
+        final XMLSyntaxRule[] rules = {new ElementRule(MultivariateFunction.class),
+                AttributeRule.newDoubleArrayRule(INITIAL), AttributeRule.newIntegerRule(POPULATION_SIZE, true)};
 
         @Override
         public String getParserDescription() {
-            return "A multivariate function view for a likelihood.";
+            return "Maximizes the arguments for the given likelihood function.";
         }
 
         @Override
         public Class getReturnType() {
-            return LogLikelihoodFunction.class;
+            return MaximumLikelihood.class;
         }
 
         @Override
         public String getParserName() {
-            return "logLikelihoodFunction";
+            return "maximumLikelihood";
         }
     };
+
 }
