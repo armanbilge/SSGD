@@ -1,5 +1,5 @@
 /*
- * NegativeLogLikelihoodFunction.java
+ * LogLikelihoodFunction.java
  *
  * SSGD: Serially-Sampled Genome Demographics
  *
@@ -37,14 +37,14 @@ import dr.xml.XMLParseException;
 import dr.xml.XMLSyntaxRule;
 
 /**
- * @author Arman Bilge
+ * @author Arman Bilge <armanbilge@gmail.com>
  */
-public class NegativeLogLikelihoodFunction implements MultivariateFunction {
+public class LogLikelihoodFunction implements MultivariateFunction {
 
     private final Likelihood function;
     private final Parameter variables;
 
-    public NegativeLogLikelihoodFunction(final Likelihood function, final Parameter variables) {
+    public LogLikelihoodFunction(final Likelihood function, final Parameter variables) {
         this.function = function;
         this.variables = variables;
     }
@@ -53,7 +53,7 @@ public class NegativeLogLikelihoodFunction implements MultivariateFunction {
     public double evaluate(final double... arguments) {
         for (int i = 0; i < getNumArguments(); ++i)
             variables.setParameterValue(i, arguments[i]);
-        return - function.getLogLikelihood();
+        return function.getLogLikelihood();
     }
 
     @Override
@@ -77,7 +77,7 @@ public class NegativeLogLikelihoodFunction implements MultivariateFunction {
 
         @Override
         public Object parseXMLObject(XMLObject xo) throws XMLParseException {
-            return new NegativeLogLikelihoodFunction((Likelihood) xo.getChild(Likelihood.class), (Parameter) xo.getChild(Parameter.class));
+            return new LogLikelihoodFunction((Likelihood) xo.getChild(Likelihood.class), (Parameter) xo.getChild(Parameter.class));
         }
 
         @Override
@@ -92,12 +92,12 @@ public class NegativeLogLikelihoodFunction implements MultivariateFunction {
 
         @Override
         public Class getReturnType() {
-            return NegativeLogLikelihoodFunction.class;
+            return LogLikelihoodFunction.class;
         }
 
         @Override
         public String getParserName() {
-            return "negativeLogLikelihoodFunction";
+            return "logLikelihoodFunction";
         }
     };
 }
