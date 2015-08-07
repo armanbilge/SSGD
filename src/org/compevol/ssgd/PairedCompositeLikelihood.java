@@ -153,13 +153,13 @@ public class PairedCompositeLikelihood extends Likelihood.Abstract {
                     (TipStatesModel) xo.getChild(TipStatesModel.class));
         }
 
+        @Override
+        public XMLSyntaxRule[] getSyntaxRules() {
+            return rules;
+        }
         final XMLSyntaxRule[] rules = {new ElementRule(PatternList.class), new ElementRule(SiteModel.class),
                 new ElementRule(Integrator.class), new ElementRule(TipStatesModel.class)};
 
-        @Override
-        public XMLSyntaxRule[] getSyntaxRules() {
-            return new XMLSyntaxRule[0];
-        }
 
         @Override
         public String getParserDescription() {
