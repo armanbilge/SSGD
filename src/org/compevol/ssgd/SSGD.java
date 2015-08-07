@@ -34,7 +34,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * @author Arman Bilge
+ * @author Arman Bilge <armanbilge@gmail.com>
  */
 public class SSGD implements Plugin {
 
@@ -42,7 +42,8 @@ public class SSGD implements Plugin {
 
     {
         final Set<XMLObjectParser> parsers = new HashSet<XMLObjectParser>();
-        parsers.add(NegativeLogLikelihoodFunction.PARSER);
+        parsers.add(LogLikelihoodFunction.PARSER);
+        parsers.add(new LambertFormatParser());
         this.parsers = Collections.unmodifiableSet(parsers);
     }
 
