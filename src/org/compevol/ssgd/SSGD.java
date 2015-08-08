@@ -43,6 +43,7 @@ public class SSGD implements Plugin {
     {
         final Set<XMLObjectParser> parsers = new HashSet<XMLObjectParser>();
         parsers.add(PairedCompositeLikelihood.PARSER);
+        parsers.add(HKYSkylineIntegrator.PARSER);
         parsers.add(TaxonSpecificSequenceErrorModel.PARSER);
         parsers.add(new LambertFormatParser());
         parsers.add(MaximumLikelihood.PARSER);

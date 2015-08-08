@@ -33,6 +33,6 @@ import dr.inference.model.Model;
  */
 public interface Integrator extends Model {
 
-    double probability(int i, double iTime, int j, double jTime, double mu);
+    double integratedProbability(int iState, double iTime, int jState, double jTime, double mu);
 
 }
