@@ -91,6 +91,8 @@ public class LambertFormatParser extends AbstractXMLObjectParser {
                     final int[] pattern = new int[taxa.getTaxonCount()];
                     for (final SequenceRecord record : records) {
                         final int j = taxa.getTaxonIndex(record.getTaxonName());
+                        if (j == -1)
+                            throw new XMLParseException("No taxon with id=" + record.getTaxonName());
                         pattern[j] = Nucleotides.INSTANCE.getState(record.getSequence().charAt(i));
                     }
                     patterns.addPattern(pattern, 1.0);
