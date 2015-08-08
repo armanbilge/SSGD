@@ -52,12 +52,11 @@ public class HKYSkylineIntegrator extends AbstractModel implements Integrator {
     private boolean betaKnown = false;
     private double beta;
 
-    public HKYSkylineIntegrator(final HKY hky, final FrequencyModel frequencyModel, final PiecewisePopulationModel populationModel) {
+    public HKYSkylineIntegrator(final HKY hky, final PiecewisePopulationModel populationModel) {
         super("HKYSkylineIntegrator");
         this.hky = hky;
         addModel(hky);
-        this.frequencyModel = frequencyModel;
-        addModel(frequencyModel);
+        frequencyModel = hky.getFrequencyModel();
         this.populationModel = populationModel;
         addModel(populationModel);
     }
@@ -191,7 +190,6 @@ public class HKYSkylineIntegrator extends AbstractModel implements Integrator {
         @Override
         public Object parseXMLObject(final XMLObject xo) throws XMLParseException {
             return new HKYSkylineIntegrator((HKY) xo.getChild(HKY.class),
-                    (FrequencyModel) xo.getChild(FrequencyModel.class),
                     (PiecewisePopulationModel) xo.getChild(PiecewisePopulationModel.class));
         }
 
@@ -200,7 +198,6 @@ public class HKYSkylineIntegrator extends AbstractModel implements Integrator {
             return rules;
         }
         private final XMLSyntaxRule[] rules = {new ElementRule(HKY.class),
-                new ElementRule(FrequencyModel.class),
                 new ElementRule(PiecewisePopulationModel.class)};
 
         @Override
