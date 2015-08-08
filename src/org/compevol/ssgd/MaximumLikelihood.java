@@ -26,6 +26,7 @@
 
 package org.compevol.ssgd;
 
+import dr.inference.model.Parameter;
 import dr.math.DifferentialEvolution;
 import dr.math.MachineAccuracy;
 import dr.math.MultivariateFunction;
@@ -72,28 +73,27 @@ public class MaximumLikelihood implements Spawnable {
 
     public static final XMLObjectParser PARSER = new AbstractXMLObjectParser() {
 
-        private static final String INITIAL = "initial";
         private static final String POPULATION_SIZE = "populationSize";
 
         @Override
         public Object parseXMLObject(final XMLObject xo) throws XMLParseException {
 
             final MultivariateFunction likelihood = (MultivariateFunction) xo.getChild(MultivariateFunction.class);
-            final double[] initial = xo.getDoubleArrayAttribute(INITIAL);
+            final Parameter initial = (Parameter) xo.getChild(Parameter.class);
 
             if (xo.hasAttribute(POPULATION_SIZE))
-                return new MaximumLikelihood(likelihood, initial, xo.getIntegerAttribute(POPULATION_SIZE));
+                return new MaximumLikelihood(likelihood, initial.getParameterValues(), xo.getIntegerAttribute(POPULATION_SIZE));
             else
-                return new MaximumLikelihood(likelihood, initial);
-            
+                return new MaximumLikelihood(likelihood, initial.getParameterValues());
+
         }
 
         @Override
         public XMLSyntaxRule[] getSyntaxRules() {
             return rules;
         }
-        final XMLSyntaxRule[] rules = {new ElementRule(MultivariateFunction.class),
-                AttributeRule.newDoubleArrayRule(INITIAL), AttributeRule.newIntegerRule(POPULATION_SIZE, true)};
+        final XMLSyntaxRule[] rules = {new ElementRule(MultivariateFunction.class), new ElementRule(Parameter.class),
+                AttributeRule.newIntegerRule(POPULATION_SIZE, true)};
 
         @Override
         public String getParserDescription() {
