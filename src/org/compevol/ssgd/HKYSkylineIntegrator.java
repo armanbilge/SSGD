@@ -116,7 +116,7 @@ public class HKYSkylineIntegrator extends AbstractModel implements Integrator {
         double integratedP = 0;
         for (int i = k; i < m; ++i) {
 
-            final double N = df.getEpochDemographic(i);
+            final double N = df.getEpochDemographic(i - 1);
             integratedP += g * Math.exp(previous / N) * (H.apply(current, N) - H.apply(previous, N));
 
             g *= Math.exp(-(current - previous) / N);
