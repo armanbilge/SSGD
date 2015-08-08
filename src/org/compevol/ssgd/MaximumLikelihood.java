@@ -77,7 +77,15 @@ public class MaximumLikelihood implements Spawnable {
 
         @Override
         public Object parseXMLObject(final XMLObject xo) throws XMLParseException {
-            return null;
+
+            final MultivariateFunction likelihood = (MultivariateFunction) xo.getChild(MultivariateFunction.class);
+            final double[] initial = xo.getDoubleArrayAttribute(INITIAL);
+
+            if (xo.hasAttribute(POPULATION_SIZE))
+                return new MaximumLikelihood(likelihood, initial, xo.getIntegerAttribute(POPULATION_SIZE));
+            else
+                return new MaximumLikelihood(likelihood, initial);
+            
         }
 
         @Override
