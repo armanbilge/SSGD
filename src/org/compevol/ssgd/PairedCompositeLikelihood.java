@@ -49,7 +49,7 @@ import dr.xml.XMLSyntaxRule;
  */
 public class PairedCompositeLikelihood extends Likelihood.Abstract {
 
-    private final PatternList patterns;
+    private PatternList patterns;
     private final SiteModel siteModel;
     private final Integrator integrator;
     private final TipStatesModel tipStatesModel;
@@ -70,6 +70,12 @@ public class PairedCompositeLikelihood extends Likelihood.Abstract {
         constant.setN0(1);
         final Tree fakeTree = new CoalescentSimulator().simulateTree(patterns, constant);
         tipStatesModel.setTree(fakeTree);
+        for (int i = 0; i < patterns.getTaxonCount(); ++i)
+            tipStatesModel.setStates(patterns, i, i, patterns.getTaxon(i).getId());
+    }
+
+    public void setPatterns(final PatternList patterns) {
+        this.patterns = patterns;
         for (int i = 0; i < patterns.getTaxonCount(); ++i)
             tipStatesModel.setStates(patterns, i, i, patterns.getTaxon(i).getId());
     }
