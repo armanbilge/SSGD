@@ -108,7 +108,7 @@ public class HKYSkylineIntegrator extends AbstractModel implements Integrator {
 
         int k;
         double current;
-        for (k = 0, current = 0; current < start; current += df.getEpochDuration(k++));
+        for (k = 0, current = 0; current <= start; current += df.getEpochDuration(k++));
         double previous = start;
 
         double g = 1.0;
@@ -138,7 +138,7 @@ public class HKYSkylineIntegrator extends AbstractModel implements Integrator {
 
     private double transitionH(final double t, final double N, final int i, final int j, final double tau, final double mu) {
 
-        final int ihat = i + 2 % 4;
+        final int ihat = (i + 2) % 4;
         final int pm = i == j ? -1 : 1;
 
         final double betamu = beta * mu;
