@@ -27,11 +27,10 @@
 package org.compevol.ssgd;
 
 import dr.evolution.alignment.PatternList;
-import dr.evolution.coalescent.CoalescentSimulator;
-import dr.evolution.coalescent.ConstantPopulation;
+import dr.evolution.tree.SimpleNode;
+import dr.evolution.tree.SimpleTree;
 import dr.evolution.tree.Tree;
 import dr.evolution.util.Taxon;
-import dr.evolution.util.Units;
 import dr.evomodel.sitemodel.SiteModel;
 import dr.evomodel.substmodel.FrequencyModel;
 import dr.evomodel.treelikelihood.TipStatesModel;
@@ -66,9 +65,19 @@ public class PairedCompositeLikelihood extends Likelihood.Abstract {
         model.addModel(tipStatesModel);
 
         // Hack involving a fake tree to set up the tip states model
-        final ConstantPopulation constant = new ConstantPopulation(Units.Type.SUBSTITUTIONS);
-        constant.setN0(1);
-        final Tree fakeTree = new CoalescentSimulator().simulateTree(patterns, constant);
+        SimpleNode root = new SimpleNode();
+        root.setTaxon(patterns.getTaxon(0));
+        root.setHeight(root.getTaxon().getHeight());
+        for (int i = 1; i < patterns.getTaxonCount(); ++i) {
+            final SimpleNode child = new SimpleNode();
+            child.setTaxon(patterns.getTaxon(i));
+            child.setHeight(child.getTaxon().getHeight());
+            final SimpleNode newRoot = new SimpleNode();
+            newRoot.addChild(root);
+            newRoot.addChild(child);
+            root = newRoot;
+        }
+        final Tree fakeTree = new SimpleTree(root);
         tipStatesModel.setTree(fakeTree);
         for (int i = 0; i < patterns.getTaxonCount(); ++i)
             tipStatesModel.setStates(patterns, i, i, patterns.getTaxon(i).getId());
