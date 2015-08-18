@@ -30,7 +30,6 @@ import dr.evolution.coalescent.PiecewiseConstantPopulation;
 import dr.evomodel.coalescent.PiecewisePopulationModel;
 import dr.evomodel.substmodel.FrequencyModel;
 import dr.evomodel.substmodel.HKY;
-import dr.inference.model.AbstractModel;
 import dr.inference.model.Model;
 import dr.inference.model.Variable;
 import dr.xml.AbstractXMLObjectParser;
@@ -43,7 +42,7 @@ import dr.xml.XMLSyntaxRule;
 /**
  * @author Arman Bilge
  */
-public class HKYSkylineIntegrator extends AbstractModel implements Integrator {
+public class HKYSkylineIntegrator extends Integrator {
 
     private final HKY hky;
     private final FrequencyModel frequencyModel;
@@ -51,6 +50,7 @@ public class HKYSkylineIntegrator extends AbstractModel implements Integrator {
 
     private boolean betaKnown = false;
     private double beta;
+    private double kappa;
 
     public HKYSkylineIntegrator(final HKY hky, final PiecewisePopulationModel populationModel) {
         super("HKYSkylineIntegrator");
@@ -62,7 +62,7 @@ public class HKYSkylineIntegrator extends AbstractModel implements Integrator {
     }
 
     private void calculateBeta() {
-        final double kappa = hky.getKappa();
+        kappa = hky.getKappa();
         final double freqA = frequencyModel.getFrequency(0);
         final double freqC = frequencyModel.getFrequency(1);
         final double freqG = frequencyModel.getFrequency(2);
@@ -74,7 +74,7 @@ public class HKYSkylineIntegrator extends AbstractModel implements Integrator {
     }
 
     @Override
-    public double integratedProbability(final int iState, final double iTime, final int jState, final double jTime, final double mu) {
+    protected double calculateIntegratedProbability(final int iState, final double iTime, final int jState, final double jTime, final double mu) {
 
         if (!betaKnown)
             calculateBeta();
@@ -149,7 +149,7 @@ public class HKYSkylineIntegrator extends AbstractModel implements Integrator {
         final double freqj = frequencyModel.getFrequency(j);
         final double freq = freqi + frequencyModel.getFrequency(ihat);
 
-        final double freqkappam1p1 = freq * (hky.getKappa() - 1) + 1;
+        final double freqkappam1p1 = freq * (kappa - 1) + 1;
 
         return Math.exp(-t/N) * (pm * freqi * Math.exp(mbetamutwotptau * freqkappam1p1) / (twobetamuN * freqkappam1p1 + 1) - freqj * ((1 - freq) * Math.exp(mbetamutwotptau) / (twobetamuN + 1) + freq)) / freq;
 
@@ -162,11 +162,13 @@ public class HKYSkylineIntegrator extends AbstractModel implements Integrator {
 
     @Override
     protected void handleModelChangedEvent(Model model, Object o, int i) {
+        super.handleModelChangedEvent(model, o, i);
         betaKnown = false;
     }
 
     @Override
     protected void handleVariableChangedEvent(Variable variable, int i, Variable.ChangeType changeType) {
+        super.handleVariableChangedEvent(variable, i, changeType);
         betaKnown = false;
     }
 
