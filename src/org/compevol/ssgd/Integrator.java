@@ -74,10 +74,11 @@ public abstract class Integrator extends AbstractModel {
         @Override
         public int hashCode() {
             int result;
-            result = iState ^ (jState << 16);
             final long iTime = Double.doubleToLongBits(this.iTime);
             final long jTime = Double.doubleToLongBits(this.jTime);
-            result = 31 * result + (int) (iTime ^ (iTime >>> 32) ^ jTime ^ (jTime >>> 32));
+            final int i = (int) (31 * iState + iTime ^ (iTime >>> 32));
+            final int j = (int) (31 * jState + jTime ^ (jTime >>> 32));
+            result = i ^ j;
             final long mu = Double.doubleToLongBits(this.mu);
             result = 31 * result + (int) (mu ^ (mu >>> 32));
             return result;
