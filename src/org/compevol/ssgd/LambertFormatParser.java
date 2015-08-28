@@ -127,7 +127,7 @@ public class LambertFormatParser extends AbstractXMLObjectParser {
         public SequenceRecord(final String l) {
             final Scanner sc = new Scanner(l);
             sc.useDelimiter(",");
-            gene = sc.next();
+            gene = "";
             taxon = sc.next();
             A = nextInt(sc);
             T = nextInt(sc);
