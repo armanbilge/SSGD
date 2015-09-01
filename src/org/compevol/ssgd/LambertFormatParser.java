@@ -26,10 +26,9 @@
 
 package org.compevol.ssgd;
 
-import dr.evolution.alignment.PatternList;
-import dr.evolution.alignment.Patterns;
 import dr.evolution.datatype.Nucleotides;
-import dr.evolution.util.Taxa;
+import dr.evolution.util.Taxon;
+import dr.evolution.util.TaxonList;
 import dr.xml.AbstractXMLObjectParser;
 import dr.xml.AttributeRule;
 import dr.xml.ElementRule;
@@ -39,68 +38,66 @@ import dr.xml.XMLSyntaxRule;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.Arrays;
-import java.util.InputMismatchException;
 import java.util.Scanner;
-import java.util.logging.Logger;
 
 /**
  * @author Arman Bilge <armanbilge@gmail.com>
  */
 public class LambertFormatParser extends AbstractXMLObjectParser {
 
-    private static final Logger LOGGER = Logger.getLogger("org.compevol.ssgd");
     private static final String FILENAME = "filename";
 
     @Override
     public Object parseXMLObject(final XMLObject xo) throws XMLParseException {
 
-        final Taxa taxa = (Taxa) xo.getChild(Taxa.class);
-
-        final int[] constantA = new int[taxa.getTaxonCount()];
-        Arrays.fill(constantA, Nucleotides.INSTANCE.getState('A'));
-        final int[] constantC = new int[taxa.getTaxonCount()];
-        Arrays.fill(constantC, Nucleotides.INSTANCE.getState('C'));
-        final int[] constantG = new int[taxa.getTaxonCount()];
-        Arrays.fill(constantG, Nucleotides.INSTANCE.getState('G'));
-        final int[] constantT = new int[taxa.getTaxonCount()];
-        Arrays.fill(constantT, Nucleotides.INSTANCE.getState('T'));
+        final TaxonList taxa = (TaxonList) xo.getChild(TaxonList.class);
 
         final File file = new File(xo.getStringAttribute(FILENAME));
-        final Patterns patterns = new Patterns(Nucleotides.INSTANCE, taxa);
+        final PairedPatterns patterns = new PairedPatterns(Nucleotides.INSTANCE, taxa);
 
         try {
 
-            final Scanner sc = new Scanner(file);
-
-            while (sc.hasNextLine()) {
-
-                final SequenceRecord[] records = new SequenceRecord[taxa.getTaxonCount()];
-                for (int i = 0; i < records.length; ++i) {
-                    records[i] = new SequenceRecord(sc.nextLine());
-                }
-
-                LOGGER.info("Processing gene " + records[0].getGeneName() + ".");
-
-                patterns.addPattern(constantA, records[0].getACount());
-                patterns.addPattern(constantC, records[0].getCCount());
-                patterns.addPattern(constantG, records[0].getGCount());
-                patterns.addPattern(constantT, records[0].getTCount());
-
-                for (int i = 0; i < records[0].getSequence().length(); ++i) {
-                    final int[] pattern = new int[taxa.getTaxonCount()];
-                    for (final SequenceRecord record : records) {
-                        final int j = taxa.getTaxonIndex(record.getTaxonName());
-                        if (j == -1)
-                            throw new XMLParseException("No taxon with id=" + record.getTaxonName());
-                        pattern[j] = Nucleotides.INSTANCE.getState(record.getSequence().charAt(i));
-                    }
-                    patterns.addPattern(pattern, 1.0);
-                }
-
+            final int N;
+            {
+                int i;
+                final Scanner sc = new Scanner(file);
+                for (i = 0; sc.hasNextLine(); ++i, sc.nextLine());
+                sc.close();
+                N = i;
             }
 
-            sc.close();
+            for (int i = 0; i < N; ++i) {
+                for (int j = i+1; j < N; ++j) {
+
+                    final Scanner sc = new Scanner(file);
+
+                    SequenceRecord x = null;
+                    SequenceRecord y = null;
+                    for (int k = 0; k <= j; ++k) {
+                        if (k == i)
+                            x = new SequenceRecord(sc.nextLine());
+                        else if (k == j)
+                            y = new SequenceRecord(sc.nextLine());
+                        else if (sc.hasNextLine())
+                            sc.nextLine();
+                    }
+
+                    sc.close();
+
+                    final Taxon a = taxa.getTaxon(taxa.getTaxonIndex(x.getTaxonName()));
+                    final Taxon b = taxa.getTaxon(taxa.getTaxonIndex(y.getTaxonName()));
+
+                    patterns.addPattern(a, Nucleotides.A_STATE, b, Nucleotides.A_STATE, x.getACount());
+                    patterns.addPattern(a, Nucleotides.C_STATE, b, Nucleotides.C_STATE, x.getCCount());
+                    patterns.addPattern(a, Nucleotides.G_STATE, b, Nucleotides.G_STATE, x.getGCount());
+                    patterns.addPattern(a, Nucleotides.UT_STATE, b, Nucleotides.UT_STATE, x.getTCount());
+
+                    for (int k = 0; k < x.getSequence().length(); ++k)
+                        patterns.addPattern(a, Nucleotides.INSTANCE.getState(x.getSequence().charAt(k)),
+                                b, Nucleotides.INSTANCE.getState(y.getSequence().charAt(k)));
+
+                }
+            }
 
         } catch (final FileNotFoundException ex) {
             throw new XMLParseException(ex.getMessage());
@@ -109,54 +106,40 @@ public class LambertFormatParser extends AbstractXMLObjectParser {
         return patterns;
     }
 
-    private static int nextInt(final Scanner sc) {
-        try {
-            return sc.nextInt();
-        } catch (final InputMismatchException ime) {
-            return 0;
-        }
-    }
-
     private static final class SequenceRecord {
 
-        private final String gene;
         private final String taxon;
-        private final int A, T, G, C;
+        private final long A, T, G, C;
         private final String sequence;
 
         public SequenceRecord(final String l) {
             final Scanner sc = new Scanner(l);
             sc.useDelimiter(",");
-            gene = "";
             taxon = sc.next();
-            A = nextInt(sc);
-            T = nextInt(sc);
-            G = nextInt(sc);
-            C = nextInt(sc);
+            A = Long.parseLong(sc.next());
+            T = Long.parseLong(sc.next());
+            G = Long.parseLong(sc.next());
+            C = Long.parseLong(sc.next());
             sequence = sc.next();
-        }
-
-        public String getGeneName() {
-            return gene;
         }
 
         public String getTaxonName() {
             return taxon;
         }
 
-        public int getACount() {
+        public long getACount() {
             return A;
         }
 
-        public int getTCount() {
+        public long getTCount() {
             return T;
         }
 
-        public int getGCount() {
+        public long getGCount() {
             return G;
         }
 
-        public int getCCount() {
+        public long getCCount() {
             return C;
         }
 
@@ -166,7 +149,7 @@ public class LambertFormatParser extends AbstractXMLObjectParser {
 
     }
 
-    private final XMLSyntaxRule[] rules = {AttributeRule.newStringRule(FILENAME), new ElementRule(Taxa.class)};
+    private final XMLSyntaxRule[] rules = {AttributeRule.newStringRule(FILENAME), new ElementRule(TaxonList.class)};
 
     @Override
     public XMLSyntaxRule[] getSyntaxRules() {
@@ -175,12 +158,12 @@ public class LambertFormatParser extends AbstractXMLObjectParser {
 
     @Override
     public String getParserDescription() {
-        return "Converts a file in Lambert format to a BEAST PatternList.";
+        return "Converts a file in Lambert format to a PairedPatterns summary.";
     }
 
     @Override
     public Class getReturnType() {
-        return PatternList.class;
+        return PairedPatterns.class;
     }
 
     @Override

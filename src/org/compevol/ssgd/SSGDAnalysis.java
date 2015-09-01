@@ -51,8 +51,9 @@ public class SSGDAnalysis implements Bootstrappable {
 
     @Override
     public void setPatterns(final PatternList... patterns) {
-        for (int i = 0; i < likelihoods.length; ++i)
-            likelihoods[i].setPatterns(patterns[i]);
+        // TODO Fix me
+//        for (int i = 0; i < likelihoods.length; ++i)
+//            likelihoods[i].setPatterns(patterns[i]);
     }
 
     @Override

@@ -26,11 +26,12 @@
 
 package org.compevol.ssgd;
 
-import dr.evolution.alignment.PatternList;
+import dr.evolution.alignment.Patterns;
 import dr.evolution.tree.SimpleNode;
 import dr.evolution.tree.SimpleTree;
 import dr.evolution.tree.Tree;
 import dr.evolution.util.Taxon;
+import dr.evolution.util.TaxonList;
 import dr.evomodel.sitemodel.SiteModel;
 import dr.evomodel.substmodel.FrequencyModel;
 import dr.evomodel.treelikelihood.TipStatesModel;
@@ -43,17 +44,20 @@ import dr.xml.XMLObjectParser;
 import dr.xml.XMLParseException;
 import dr.xml.XMLSyntaxRule;
 
+import java.util.Arrays;
+
 /**
  * @author Arman Bilge <armanbilge@gmail.com>
  */
 public class PairedCompositeLikelihood extends Likelihood.Abstract {
 
-    private PatternList patterns;
+    private PairedPatterns patterns;
     private final SiteModel siteModel;
     private final Integrator integrator;
     private final TipStatesModel tipStatesModel;
+    private final TaxonList taxa;
 
-    public PairedCompositeLikelihood(final PatternList patterns, final SiteModel siteModel, final Integrator integrator, final TipStatesModel tipStatesModel) {
+    public PairedCompositeLikelihood(final PairedPatterns patterns, final SiteModel siteModel, final Integrator integrator, final TipStatesModel tipStatesModel) {
         super(new CompoundModel("PairedCompositeLikelihoodModel"));
         final CompoundModel model = (CompoundModel) getModel();
         this.patterns = patterns;
@@ -63,14 +67,21 @@ public class PairedCompositeLikelihood extends Likelihood.Abstract {
         model.addModel(integrator);
         this.tipStatesModel = tipStatesModel;
         model.addModel(tipStatesModel);
+        taxa = patterns.getTaxa();
 
-        // Hack involving a fake tree to set up the tip states model
+        // Hack involving fake patterns and a fake tree to set up the tip states model
+        final Patterns fakePatterns = new Patterns(patterns.getDataType(), taxa);
+        for (int i = 0; i < patterns.getDataType().getStateCount(); ++i) {
+            final int[] pattern = new int[taxa.getTaxonCount()];
+            Arrays.fill(pattern, i);
+            fakePatterns.addPattern(pattern);
+        }
         SimpleNode root = new SimpleNode();
-        root.setTaxon(patterns.getTaxon(0));
+        root.setTaxon(taxa.getTaxon(0));
         root.setHeight(root.getTaxon().getHeight());
-        for (int i = 1; i < patterns.getTaxonCount(); ++i) {
+        for (int i = 1; i < taxa.getTaxonCount(); ++i) {
             final SimpleNode child = new SimpleNode();
-            child.setTaxon(patterns.getTaxon(i));
+            child.setTaxon(taxa.getTaxon(i));
             child.setHeight(child.getTaxon().getHeight());
             final SimpleNode newRoot = new SimpleNode();
             newRoot.addChild(root);
@@ -79,54 +90,47 @@ public class PairedCompositeLikelihood extends Likelihood.Abstract {
         }
         final Tree fakeTree = new SimpleTree(root);
         tipStatesModel.setTree(fakeTree);
-        for (int i = 0; i < patterns.getTaxonCount(); ++i)
-            tipStatesModel.setStates(patterns, i, i, patterns.getTaxon(i).getId());
-    }
-
-    public void setPatterns(final PatternList patterns) {
-        this.patterns = patterns;
-        for (int i = 0; i < patterns.getTaxonCount(); ++i)
-            tipStatesModel.setStates(patterns, i, i, patterns.getTaxon(i).getId());
+        for (int i = 0; i < taxa.getTaxonCount(); ++i)
+            tipStatesModel.setStates(fakePatterns, i, i, taxa.getTaxon(i).getId());
     }
 
     @Override
     protected double calculateLogLikelihood() {
 
-        double logL = 0.0;
+        final int taxonCount = taxa.getTaxonCount();
+        final int stateCount = patterns.getDataType().getStateCount();
 
-        final int taxonCount = patterns.getTaxonCount();
-        final int patternCount = patterns.getPatternCount();
-        final int stateCount = siteModel.getSubstitutionModel().getDataType().getStateCount();
-
-        final double[][] partials = new double[taxonCount][patternCount * stateCount];
+        final double[][] partials = new double[taxonCount][stateCount * stateCount];
         for (int i = 0; i < taxonCount; ++i) {
             tipStatesModel.getTipPartials(i, partials[i]);
         }
 
-        int l = 0;
-        for (int i = 0; i < patternCount; ++i) {
+        double logL = 0.0;
 
-            double patternLogL = 0.0;
+        for (int x = 0; x < taxonCount; ++x) {
 
-            for (int j = 0; j < taxonCount; ++j) {
+            for (int y = x+1; y < taxonCount; ++y) {
 
-                for (int k = j+1; k < taxonCount; ++k) {
+                for (int i = 0; i < stateCount; ++i) {
 
-                    final Taxon a = patterns.getTaxon(j);
-                    final double[] aPartial = new double[stateCount];
-                    System.arraycopy(partials[j], l, aPartial, 0, stateCount);
-                    final Taxon b = patterns.getTaxon(k);
-                    final double[] bPartial = new double[stateCount];
-                    System.arraycopy(partials[k], l, bPartial, 0, stateCount);
+                    for (int j = 0; j < stateCount; ++j) {
 
-                    patternLogL += pairLogLikelihood(a, aPartial, b, bPartial);
+                        final Taxon a = taxa.getTaxon(x);
+                        final double[] aPartial = new double[stateCount];
+                        System.arraycopy(partials[i], stateCount * i, aPartial, 0, stateCount);
+
+                        final Taxon b = taxa.getTaxon(y);
+                        final double[] bPartial = new double[stateCount];
+                        System.arraycopy(partials[i], stateCount * j, bPartial, 0, stateCount);
+
+                        logL += patterns.getPatternWeight(a, i, b, j) * pairLogLikelihood(a, aPartial, b, bPartial);
+
+                    }
 
                 }
 
             }
 
-            logL += patternLogL * patterns.getPatternWeight(i);
-            l += stateCount;
         }
 
         return logL;
@@ -162,7 +166,7 @@ public class PairedCompositeLikelihood extends Likelihood.Abstract {
 
         @Override
         public Object parseXMLObject(XMLObject xo) throws XMLParseException {
-            return new PairedCompositeLikelihood((PatternList) xo.getChild(PatternList.class),
+            return new PairedCompositeLikelihood((PairedPatterns) xo.getChild(PairedPatterns.class),
                     (SiteModel) xo.getChild(SiteModel.class),
                     (Integrator) xo.getChild(Integrator.class),
                     (TipStatesModel) xo.getChild(TipStatesModel.class));
@@ -172,7 +176,7 @@ public class PairedCompositeLikelihood extends Likelihood.Abstract {
         public XMLSyntaxRule[] getSyntaxRules() {
             return rules;
         }
-        final XMLSyntaxRule[] rules = {new ElementRule(PatternList.class), new ElementRule(SiteModel.class),
+        final XMLSyntaxRule[] rules = {new ElementRule(PairedPatterns.class), new ElementRule(SiteModel.class),
                 new ElementRule(Integrator.class), new ElementRule(TipStatesModel.class)};
 
 
