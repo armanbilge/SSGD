@@ -29,6 +29,7 @@ package org.compevol.ssgd;
 import dr.evolution.datatype.DataType;
 import dr.evolution.util.Taxon;
 import dr.evolution.util.TaxonList;
+import dr.math.MathUtils;
 
 /**
  * @author Arman Bilge <armanbilge@gmail.com>
@@ -88,6 +89,21 @@ public class PairedPatterns {
 
     public final TaxonList getTaxa() {
         return taxa;
+    }
+
+    public final double[] getApproximateFrequencies() {
+
+        final double[] freqs = new double[stateCount];
+
+        for (int i = 0; i < stateCount; ++i)
+            freqs[i] = weights[0][(stateCount+1) * i];
+
+        final double sum = MathUtils.getTotal(freqs);
+
+        for (int i = 0; i < stateCount; ++i)
+            freqs[i] /= sum;
+
+        return freqs;
     }
 
 }

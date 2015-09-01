@@ -1,5 +1,5 @@
 /*
- * SSGD.java
+ * PairedPatternsFrequenciesParser.java
  *
  * SSGD: Serially-Sampled Genome Demographics
  *
@@ -26,37 +26,42 @@
 
 package org.compevol.ssgd;
 
-import dr.app.plugin.Plugin;
-import dr.xml.XMLObjectParser;
-
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import dr.inference.model.Parameter;
+import dr.xml.AbstractXMLObjectParser;
+import dr.xml.ElementRule;
+import dr.xml.XMLObject;
+import dr.xml.XMLParseException;
+import dr.xml.XMLSyntaxRule;
 
 /**
  * @author Arman Bilge <armanbilge@gmail.com>
  */
-public class SSGD implements Plugin {
+public class PairedPatternsFrequenciesParser extends AbstractXMLObjectParser {
 
-    private final Set<XMLObjectParser> parsers;
-
-    {
-        final Set<XMLObjectParser> parsers = new HashSet<XMLObjectParser>();
-        parsers.add(SSGDAnalysis.PARSER);
-        parsers.add(PairedCompositeLikelihood.PARSER);
-        parsers.add(HKYSkylineIntegrator.PARSER);
-        parsers.add(TaxonSpecificSequenceErrorModel.PARSER);
-        parsers.add(new LambertFormatParser());
-        parsers.add(new PairedPatternsFrequenciesParser());
-        parsers.add(MaximumLikelihood.PARSER);
-        parsers.add(LogLikelihoodFunction.PARSER);
-        parsers.add(Bootstrapper.PARSER);
-        this.parsers = Collections.unmodifiableSet(parsers);
+    @Override
+    public Object parseXMLObject(final XMLObject xo) throws XMLParseException {
+        return new Parameter.Default(((PairedPatterns) xo.getChild(PairedPatterns.class)).getApproximateFrequencies());
     }
 
     @Override
-    public Set<XMLObjectParser> getParsers() {
-        return parsers;
+    public XMLSyntaxRule[] getSyntaxRules() {
+        return rules;
+    }
+    private final XMLSyntaxRule[] rules = {new ElementRule(PairedPatterns.class)};
+
+    @Override
+    public String getParserDescription() {
+        return null;
+    }
+
+    @Override
+    public Class getReturnType() {
+        return Parameter.class;
+    }
+
+    @Override
+    public String getParserName() {
+        return "pairedPatternsFrequencies";
     }
 
 }
