@@ -53,12 +53,14 @@ public class MaximumLikelihood implements Spawnable {
         this.likelihood = likelihood;
         this.initial = initial;
         optimizer = new DifferentialEvolution(likelihood.getNumArguments());
+        ((DifferentialEvolution) optimizer).prin = 2;
     }
 
     public MaximumLikelihood(final MultivariateFunction likelihood, final double[] initial, final int populationSize) {
         this.likelihood = likelihood;
         this.initial = initial;
         optimizer = new DifferentialEvolution(likelihood.getNumArguments(), populationSize);
+        ((DifferentialEvolution) optimizer).prin = 2;
     }
 
     @Override
