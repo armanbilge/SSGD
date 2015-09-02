@@ -151,7 +151,7 @@ public class PairedCompositeLikelihood extends Likelihood.Abstract {
 
             for (int i = 0; i < stateCount; ++i) {
                 for (int j = 0; j < stateCount; ++j) {
-                    categoryL += frequencies.getFrequency(i)* aPartial[i] * bPartial[j] * integrator.integratedProbability(i, a.getHeight(), j, b.getHeight(), mu);
+                    categoryL += frequencies.getFrequency(i) * aPartial[i] * bPartial[j] * integrator.integratedProbability(i, a.getHeight(), j, b.getHeight(), mu);
                 }
             }
 
