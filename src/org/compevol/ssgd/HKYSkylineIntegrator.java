@@ -147,11 +147,12 @@ public class HKYSkylineIntegrator extends Integrator {
 
         final double freqi = frequencyModel.getFrequency(i);
         final double freqj = frequencyModel.getFrequency(j);
-        final double freq = freqi + frequencyModel.getFrequency(ihat);
+        final double freqihat = frequencyModel.getFrequency(ihat);
+        final double freq = freqi + freqihat;
 
         final double freqkappam1p1 = freq * (kappa - 1) + 1;
 
-        return Math.exp(-t/N) * (pm * freqi * Math.exp(mbetamutwotptau * freqkappam1p1) / (twobetamuN * freqkappam1p1 + 1) - freqj * ((1 - freq) * Math.exp(mbetamutwotptau) / (twobetamuN + 1) + freq)) / freq;
+        return Math.exp(-t/N) * (pm * freqihat * Math.exp(mbetamutwotptau * freqkappam1p1) / (twobetamuN * freqkappam1p1 + 1) - freqj * ((1 - freq) * Math.exp(mbetamutwotptau) / (twobetamuN + 1) + freq)) / freq;
 
     }
 
