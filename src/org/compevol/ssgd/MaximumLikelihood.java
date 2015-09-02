@@ -26,41 +26,42 @@
 
 package org.compevol.ssgd;
 
+import dr.inference.model.Bounds;
 import dr.inference.model.Parameter;
-import dr.math.DifferentialEvolution;
-import dr.math.MachineAccuracy;
-import dr.math.MultivariateFunction;
-import dr.math.MultivariateMinimum;
 import dr.xml.AbstractXMLObjectParser;
-import dr.xml.AttributeRule;
 import dr.xml.ElementRule;
 import dr.xml.Spawnable;
 import dr.xml.XMLObject;
 import dr.xml.XMLObjectParser;
 import dr.xml.XMLParseException;
 import dr.xml.XMLSyntaxRule;
+import org.apache.commons.math3.analysis.MultivariateFunction;
+import org.apache.commons.math3.optim.InitialGuess;
+import org.apache.commons.math3.optim.MaxEval;
+import org.apache.commons.math3.optim.PointValuePair;
+import org.apache.commons.math3.optim.SimpleBounds;
+import org.apache.commons.math3.optim.nonlinear.scalar.GoalType;
+import org.apache.commons.math3.optim.nonlinear.scalar.MultivariateOptimizer;
+import org.apache.commons.math3.optim.nonlinear.scalar.ObjectiveFunction;
+import org.apache.commons.math3.optim.nonlinear.scalar.noderiv.BOBYQAOptimizer;
+
+import java.util.Arrays;
 
 /**
  * @author Arman Bilge <armanbilge@gmail.com>
  */
 public class MaximumLikelihood implements Spawnable {
 
-    private final MultivariateMinimum optimizer;
+    private final MultivariateOptimizer optimizer;
     private final MultivariateFunction likelihood;
+    private final Parameter variables;
     private final double[] initial;
 
-    public MaximumLikelihood(final MultivariateFunction likelihood, final double[] initial) {
+    public MaximumLikelihood(final MultivariateFunction likelihood, final Parameter variables) {
         this.likelihood = likelihood;
-        this.initial = initial;
-        optimizer = new DifferentialEvolution(likelihood.getNumArguments());
-        ((DifferentialEvolution) optimizer).prin = 2;
-    }
-
-    public MaximumLikelihood(final MultivariateFunction likelihood, final double[] initial, final int populationSize) {
-        this.likelihood = likelihood;
-        this.initial = initial;
-        optimizer = new DifferentialEvolution(likelihood.getNumArguments(), populationSize);
-        ((DifferentialEvolution) optimizer).prin = 2;
+        this.variables = variables;
+        this.initial = variables.getParameterValues();
+        optimizer = new BOBYQAOptimizer(variables.getDimension() * 3 / 2);
     }
 
     @Override
@@ -70,12 +71,19 @@ public class MaximumLikelihood implements Spawnable {
 
     @Override
     public void run() {
-        optimizer.optimize(new NegativeMultivariateFunction(likelihood), initial, MachineAccuracy.EPSILON, MachineAccuracy.EPSILON);
+        final double[] lower = new double[variables.getDimension()];
+        final double[] upper = new double[variables.getDimension()];
+        final Bounds<Double> bounds = variables.getBounds();
+        for (int i = 0; i < bounds.getBoundsDimension(); ++i) {
+            lower[i] = bounds.getLowerLimit(i);
+            upper[i] = bounds.getUpperLimit(i);
+        }
+        final PointValuePair maximum = optimizer.optimize(new ObjectiveFunction(likelihood), new InitialGuess(initial), new SimpleBounds(lower, upper), MaxEval.unlimited(), GoalType.MAXIMIZE);
+        System.out.println(Arrays.toString(maximum.getPoint()));
+        System.out.println(maximum.getValue());
     }
 
     public static final XMLObjectParser PARSER = new AbstractXMLObjectParser() {
-
-        private static final String POPULATION_SIZE = "populationSize";
 
         @Override
         public Object parseXMLObject(final XMLObject xo) throws XMLParseException {
@@ -83,10 +91,7 @@ public class MaximumLikelihood implements Spawnable {
             final MultivariateFunction likelihood = (MultivariateFunction) xo.getChild(MultivariateFunction.class);
             final Parameter initial = (Parameter) xo.getChild(Parameter.class);
 
-            if (xo.hasAttribute(POPULATION_SIZE))
-                return new MaximumLikelihood(likelihood, initial.getParameterValues(), xo.getIntegerAttribute(POPULATION_SIZE));
-            else
-                return new MaximumLikelihood(likelihood, initial.getParameterValues());
+            return new MaximumLikelihood(likelihood, initial);
 
         }
 
@@ -94,8 +99,7 @@ public class MaximumLikelihood implements Spawnable {
         public XMLSyntaxRule[] getSyntaxRules() {
             return rules;
         }
-        final XMLSyntaxRule[] rules = {new ElementRule(MultivariateFunction.class), new ElementRule(Parameter.class),
-                AttributeRule.newIntegerRule(POPULATION_SIZE, true)};
+        final XMLSyntaxRule[] rules = {new ElementRule(MultivariateFunction.class), new ElementRule(Parameter.class)};
 
         @Override
         public String getParserDescription() {

@@ -28,13 +28,13 @@ package org.compevol.ssgd;
 
 import dr.inference.model.Likelihood;
 import dr.inference.model.Parameter;
-import dr.math.MultivariateFunction;
 import dr.xml.AbstractXMLObjectParser;
 import dr.xml.ElementRule;
 import dr.xml.XMLObject;
 import dr.xml.XMLObjectParser;
 import dr.xml.XMLParseException;
 import dr.xml.XMLSyntaxRule;
+import org.apache.commons.math3.analysis.MultivariateFunction;
 
 /**
  * @author Arman Bilge <armanbilge@gmail.com>
@@ -50,25 +50,10 @@ public class LogLikelihoodFunction implements MultivariateFunction {
     }
 
     @Override
-    public double evaluate(final double... arguments) {
-        for (int i = 0; i < getNumArguments(); ++i)
+    public double value(final double... arguments) {
+        for (int i = 0; i < variables.getDimension(); ++i)
             variables.setParameterValue(i, arguments[i]);
         return function.getLogLikelihood();
-    }
-
-    @Override
-    public int getNumArguments() {
-        return variables.getSize();
-    }
-
-    @Override
-    public double getLowerBound(final int i) {
-        return variables.getBounds().getLowerLimit(i);
-    }
-
-    @Override
-    public double getUpperBound(final int i) {
-        return variables.getBounds().getUpperLimit(i);
     }
 
     public static final XMLObjectParser PARSER = new AbstractXMLObjectParser() {
