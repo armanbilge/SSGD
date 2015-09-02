@@ -37,10 +37,13 @@ import dr.util.Identifiable;
  */
 public class PairedPatterns implements Identifiable {
 
+    private static final long serialVersionUID = 4011114164294449196L;
+
     private final DataType dataType;
     private final int stateCount;
     private final TaxonList taxa;
     private final double[][] weights;
+    private final double totalWeight;
 
     private String id;
 
@@ -49,6 +52,12 @@ public class PairedPatterns implements Identifiable {
         stateCount = dataType.getStateCount();
         this.taxa = taxa;
         weights = new double[taxa.getTaxonCount() * (taxa.getTaxonCount() - 1) / 2][stateCount * stateCount];
+        {
+            double total = 0.0;
+            for (final double[] weights : this.weights)
+                total += MathUtils.getTotal(weights);
+            totalWeight = total;
+        }
     }
 
     public double getPatternWeight(final Taxon a, final int i, final Taxon b, final int j) {
@@ -107,6 +116,10 @@ public class PairedPatterns implements Identifiable {
             freqs[i] /= sum;
 
         return freqs;
+    }
+
+    public final double getTotalWeight() {
+        return totalWeight;
     }
 
     @Override

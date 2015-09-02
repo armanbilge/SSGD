@@ -57,6 +57,8 @@ public class PairedCompositeLikelihood extends Likelihood.Abstract {
     private final TipStatesModel tipStatesModel;
     private final TaxonList taxa;
 
+    private double scale = 1;
+
     public PairedCompositeLikelihood(final PairedPatterns patterns, final SiteModel siteModel, final Integrator integrator, final TipStatesModel tipStatesModel) {
         super(new CompoundModel("PairedCompositeLikelihoodModel"));
         final CompoundModel model = (CompoundModel) getModel();
@@ -158,7 +160,7 @@ public class PairedCompositeLikelihood extends Likelihood.Abstract {
             L += categoryL * siteModel.getProportionForCategory(c);
         }
 
-        return Math.log(L);
+        return Math.log(L) + scale;
 
     }
 
