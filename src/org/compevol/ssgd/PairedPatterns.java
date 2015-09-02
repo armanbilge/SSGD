@@ -30,16 +30,19 @@ import dr.evolution.datatype.DataType;
 import dr.evolution.util.Taxon;
 import dr.evolution.util.TaxonList;
 import dr.math.MathUtils;
+import dr.util.Identifiable;
 
 /**
  * @author Arman Bilge <armanbilge@gmail.com>
  */
-public class PairedPatterns {
+public class PairedPatterns implements Identifiable {
 
     private final DataType dataType;
     private final int stateCount;
     private final TaxonList taxa;
     private final double[][] weights;
+
+    private String id;
 
     public PairedPatterns(final DataType dataType, final TaxonList taxa) {
         this.dataType = dataType;
@@ -106,4 +109,13 @@ public class PairedPatterns {
         return freqs;
     }
 
+    @Override
+    public String getId() {
+        return id;
+    }
+
+    @Override
+    public void setId(final String id) {
+        this.id = id;
+    }
 }

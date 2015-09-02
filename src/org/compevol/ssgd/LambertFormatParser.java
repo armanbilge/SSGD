@@ -37,7 +37,12 @@ import dr.xml.XMLParseException;
 import dr.xml.XMLSyntaxRule;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.Scanner;
 
 /**
@@ -49,6 +54,22 @@ public class LambertFormatParser extends AbstractXMLObjectParser {
 
     @Override
     public Object parseXMLObject(final XMLObject xo) throws XMLParseException {
+
+        final File serializationFile = new File(xo.getId());
+        if (serializationFile.exists()) {
+            try {
+                final ObjectInputStream in = new ObjectInputStream(new FileInputStream(serializationFile));
+                try {
+                    return in.readObject();
+                } catch (final ClassNotFoundException ex) {
+                    throw new XMLParseException(ex.getMessage());
+                } finally {
+                    in.close();
+                }
+            } catch (final IOException ex) {
+                throw new XMLParseException(ex.getMessage());
+            }
+        }
 
         final TaxonList taxa = (TaxonList) xo.getChild(TaxonList.class);
 
@@ -100,6 +121,17 @@ public class LambertFormatParser extends AbstractXMLObjectParser {
             }
 
         } catch (final FileNotFoundException ex) {
+            throw new XMLParseException(ex.getMessage());
+        }
+
+        try {
+            final ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(serializationFile));
+            try {
+                out.writeObject(patterns);
+            } finally {
+                out.close();
+            }
+        } catch (final IOException ex) {
             throw new XMLParseException(ex.getMessage());
         }
 
