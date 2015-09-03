@@ -37,7 +37,7 @@ import dr.util.Identifiable;
  */
 public class PairedPatterns implements Identifiable {
 
-    private static final long serialVersionUID = 4011114164294449196L;
+    private static final long serialVersionUID = 0L;
 
     private final DataType dataType;
     private final int stateCount;
