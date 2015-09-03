@@ -43,7 +43,6 @@ public class PairedPatterns implements Identifiable {
     private final int stateCount;
     private final TaxonList taxa;
     private final double[][] weights;
-    private final double totalWeight;
 
     private String id;
 
@@ -52,12 +51,6 @@ public class PairedPatterns implements Identifiable {
         stateCount = dataType.getStateCount();
         this.taxa = taxa;
         weights = new double[taxa.getTaxonCount() * (taxa.getTaxonCount() - 1) / 2][stateCount * stateCount];
-        {
-            double total = 0.0;
-            for (final double[] weights : this.weights)
-                total += MathUtils.getTotal(weights);
-            totalWeight = total;
-        }
     }
 
     public double getPatternWeight(final Taxon a, final int i, final Taxon b, final int j) {
@@ -83,10 +76,12 @@ public class PairedPatterns implements Identifiable {
         final int m = taxa.getTaxonIndex(a);
         final int n = taxa.getTaxonIndex(b);
 
-        if (m == n)
+        if (m == n) {
             throw new IllegalArgumentException("The two taxa must be different.");
-        else if (m > n)
+        } else if (m > n) {
             addPattern(b, j, a, i, w);
+            return;
+        }
 
         final int x = m + n * (n - 1) / 2;
         final int y = stateCount * i + j;
@@ -119,7 +114,10 @@ public class PairedPatterns implements Identifiable {
     }
 
     public final double getTotalWeight() {
-        return totalWeight;
+        double total = 0.0;
+        for (final double[] weights : this.weights)
+            total += MathUtils.getTotal(weights);
+        return total;
     }
 
     @Override
