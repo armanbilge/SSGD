@@ -36,14 +36,15 @@ import dr.xml.XMLObject;
 import dr.xml.XMLParseException;
 import dr.xml.XMLSyntaxRule;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.Scanner;
+import java.util.StringTokenizer;
 
 /**
  * @author Arman Bilge <armanbilge@gmail.com>
@@ -81,29 +82,29 @@ public class LambertFormatParser extends AbstractXMLObjectParser {
             final int N;
             {
                 int i;
-                final Scanner sc = new Scanner(file);
-                for (i = 0; sc.hasNextLine(); ++i, sc.nextLine());
-                sc.close();
+                final BufferedReader br = new BufferedReader(new FileReader(file));
+                for (i = 0; br.readLine() != null; ++i);
+                br.close();
                 N = i;
             }
 
             for (int i = 0; i < N; ++i) {
                 for (int j = i+1; j < N; ++j) {
 
-                    final Scanner sc = new Scanner(file);
+                    final BufferedReader br = new BufferedReader(new FileReader(file));
 
                     SequenceRecord x = null;
                     SequenceRecord y = null;
                     for (int k = 0; k <= j; ++k) {
                         if (k == i)
-                            x = new SequenceRecord(sc.nextLine());
+                            x = new SequenceRecord(br.readLine());
                         else if (k == j)
-                            y = new SequenceRecord(sc.nextLine());
-                        else if (sc.hasNextLine())
-                            sc.nextLine();
+                            y = new SequenceRecord(br.readLine());
+                        else
+                            br.readLine();
                     }
 
-                    sc.close();
+                    br.close();
 
                     final Taxon a = taxa.getTaxon(taxa.getTaxonIndex(x.getTaxonName()));
                     final Taxon b = taxa.getTaxon(taxa.getTaxonIndex(y.getTaxonName()));
@@ -120,7 +121,7 @@ public class LambertFormatParser extends AbstractXMLObjectParser {
                 }
             }
 
-        } catch (final FileNotFoundException ex) {
+        } catch (final IOException ex) {
             throw new XMLParseException(ex.getMessage());
         }
 
@@ -145,14 +146,13 @@ public class LambertFormatParser extends AbstractXMLObjectParser {
         private final String sequence;
 
         public SequenceRecord(final String l) {
-            final Scanner sc = new Scanner(l);
-            sc.useDelimiter(",");
-            taxon = sc.next();
-            A = Long.parseLong(sc.next());
-            T = Long.parseLong(sc.next());
-            G = Long.parseLong(sc.next());
-            C = Long.parseLong(sc.next());
-            sequence = sc.next();
+            final StringTokenizer st = new StringTokenizer(l, ",");
+            taxon = st.nextToken();
+            A = Long.parseLong(st.nextToken());
+            T = Long.parseLong(st.nextToken());
+            G = Long.parseLong(st.nextToken());
+            C = Long.parseLong(st.nextToken());
+            sequence = st.nextToken();
         }
 
         public String getTaxonName() {
