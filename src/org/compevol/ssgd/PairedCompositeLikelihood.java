@@ -57,7 +57,7 @@ public class PairedCompositeLikelihood extends Likelihood.Abstract {
     private final TipStatesModel tipStatesModel;
     private final TaxonList taxa;
 
-    private double scale = 1;
+    private double scale = 1.38651269144629;
 
     public PairedCompositeLikelihood(final PairedPatterns patterns, final SiteModel siteModel, final Integrator integrator, final TipStatesModel tipStatesModel) {
         super(new CompoundModel("PairedCompositeLikelihoodModel"));
