@@ -46,21 +46,25 @@ public class LogLikelihoodFunction implements DifferentiableFunction {
 
     private final Likelihood function;
     private final Parameter variables;
+    private final double[] scale;
 
     public LogLikelihoodFunction(final Likelihood function, final Parameter variables) {
         this.function = function;
         this.variables = variables;
+        scale = variables.getAttributeValue();
     }
 
     @Override
     public FunctionValues getValues(double[] arguments) {
+        for (int i = 0; i < variables.getDimension(); ++i)
+            variables.setParameterValue(i, arguments[i] * scale[i]);
         return new FunctionValues(-function.getLogLikelihood(), getGradient());
     }
 
     private double[] getGradient() {
         double[] gradient = new double[variables.getDimension()];
         for (int i = 0; i < gradient.length; ++i)
-            gradient[i] = -differentiate(i);
+            gradient[i] = -differentiate(i) * scale[i];
         return gradient;
     }
 
@@ -72,13 +76,13 @@ public class LogLikelihoodFunction implements DifferentiableFunction {
         final double x = variables.getValue(index);
         final double xpe = x + epsilon;
         final double b = xpe <= upper ? xpe : upper;
-        variables.setValue(index, b);
+        variables.setParameterValue(index, b);
         final double fb = function.getLogLikelihood();
         final double xme = x - epsilon;
         final double a = xme >= lower ? xme : lower;
-        variables.setValue(index, a);
+        variables.setParameterValue(index, a);
         final double fa = function.getLogLikelihood();
-        variables.setValue(index, x);
+        variables.setParameterValue(index, x);
         return (fb - fa) / (b - a);
     }
 
