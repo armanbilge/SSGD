@@ -97,11 +97,13 @@ public abstract class Integrator extends AbstractModel {
 
     @Override
     protected void handleModelChangedEvent(Model model, Object o, int i) {
+        fireModelChanged(o, i);
         probabilities.clear();
     }
 
     @Override
     protected void handleVariableChangedEvent(Variable variable, int i, Variable.ChangeType changeType) {
+        fireModelChanged(variable, i);
         probabilities.clear();
     }
 
