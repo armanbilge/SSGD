@@ -127,6 +127,9 @@ public class PairedCompositeLikelihood extends Likelihood.Abstract {
 
                         logL += patterns.getPatternWeight(a, i, b, j) * pairLogLikelihood(a, aPartial, b, bPartial);
 
+                        if (logL == Double.NEGATIVE_INFINITY)
+                            return Double.NEGATIVE_INFINITY;
+
                     }
 
                 }

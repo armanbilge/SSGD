@@ -128,6 +128,9 @@ public class HKYSkylineIntegrator extends Integrator {
         final double N = df.getEpochDemographic(m - 1);
         integratedP -= g * Math.exp(previous / N) * H.apply(previous, N);
 
+        if (Double.isNaN(integratedP))
+            return 0.0;
+
         return integratedP;
 
     }
