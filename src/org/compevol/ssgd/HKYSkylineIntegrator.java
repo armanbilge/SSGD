@@ -183,6 +183,7 @@ public class HKYSkylineIntegrator extends Integrator {
 
     @Override
     protected void restoreState() {
+        super.restoreState();
         betaKnown = false;
     }
 

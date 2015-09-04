@@ -26,8 +26,14 @@
 
 package org.compevol.ssgd;
 
-import dr.inference.model.Bounds;
+import dr.inference.loggers.Logger;
+import dr.inference.loggers.MCLogger;
+import dr.inference.ml.MLOptimizer;
+import dr.inference.model.Likelihood;
 import dr.inference.model.Parameter;
+import dr.inference.operators.ScaleOperator;
+import dr.inference.operators.SimpleOperatorSchedule;
+import dr.inference.operators.UniformOperator;
 import dr.xml.AbstractXMLObjectParser;
 import dr.xml.ElementRule;
 import dr.xml.Spawnable;
@@ -35,36 +41,27 @@ import dr.xml.XMLObject;
 import dr.xml.XMLObjectParser;
 import dr.xml.XMLParseException;
 import dr.xml.XMLSyntaxRule;
-import lbfgsb.Bound;
-import lbfgsb.DifferentiableFunction;
-import lbfgsb.LBFGSBException;
-import lbfgsb.Minimizer;
-import lbfgsb.Result;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * @author Arman Bilge <armanbilge@gmail.com>
  */
 public class MaximumLikelihood implements Spawnable {
 
-    private final Minimizer optimizer;
-    private final DifferentiableFunction likelihood;
+    private final MLOptimizer optimizer;
+    private final Likelihood likelihood;
     private final Parameter variables;
-    private final double[] initial;
 
-    public MaximumLikelihood(final DifferentiableFunction likelihood, final Parameter variables) {
+    public MaximumLikelihood(final Likelihood likelihood, final Parameter variables) {
         this.likelihood = likelihood;
         this.variables = variables;
-        this.initial = variables.getParameterValues();
-        this.optimizer = new Minimizer();
-        final List<Bound> bounds = new ArrayList<Bound>(variables.getDimension());
-        final Bounds<Double> myBounds = variables.getBounds();
-        for (int i = 0; i < myBounds.getBoundsDimension(); ++i)
-            bounds.add(new Bound(myBounds.getLowerLimit(i), myBounds.getUpperLimit(i)));
-        optimizer.setBounds(bounds);
-        optimizer.setDebugLevel(2);
+        final SimpleOperatorSchedule schedule = new SimpleOperatorSchedule();
+        schedule.addOperator(new ScaleOperator(variables, 100));
+        schedule.addOperator(new ScaleOperator(variables, 0.01));
+        schedule.addOperator(new UniformOperator(variables, 1.0));
+        final Logger[] loggers = {new MCLogger(1)};
+        ((MCLogger) loggers[0]).add(likelihood);
+        ((MCLogger) loggers[0]).add(variables);
+        this.optimizer = new MLOptimizer("ml", 10000, likelihood, schedule, loggers);
     }
 
     @Override
@@ -74,12 +71,7 @@ public class MaximumLikelihood implements Spawnable {
 
     @Override
     public void run() {
-        try {
-            final Result result = optimizer.run(likelihood, initial);
-            System.out.println(result);
-        } catch (final LBFGSBException ex) {
-            throw new RuntimeException(ex);
-        }
+        optimizer.run();
     }
 
     public static final XMLObjectParser PARSER = new AbstractXMLObjectParser() {
@@ -87,7 +79,7 @@ public class MaximumLikelihood implements Spawnable {
         @Override
         public Object parseXMLObject(final XMLObject xo) throws XMLParseException {
 
-            final DifferentiableFunction likelihood = (DifferentiableFunction) xo.getChild(DifferentiableFunction.class);
+            final Likelihood likelihood = (Likelihood) xo.getChild(Likelihood.class);
             final Parameter initial = (Parameter) xo.getChild(Parameter.class);
 
             return new MaximumLikelihood(likelihood, initial);
@@ -98,7 +90,7 @@ public class MaximumLikelihood implements Spawnable {
         public XMLSyntaxRule[] getSyntaxRules() {
             return rules;
         }
-        final XMLSyntaxRule[] rules = {new ElementRule(DifferentiableFunction.class), new ElementRule(Parameter.class)};
+        final XMLSyntaxRule[] rules = {new ElementRule(Likelihood.class), new ElementRule(Parameter.class)};
 
         @Override
         public String getParserDescription() {

@@ -107,4 +107,9 @@ public abstract class Integrator extends AbstractModel {
         probabilities.clear();
     }
 
+    @Override
+    protected void restoreState() {
+        probabilities.clear();
+    }
+
 }
