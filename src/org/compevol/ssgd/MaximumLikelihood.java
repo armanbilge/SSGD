@@ -42,6 +42,7 @@ import lbfgsb.Minimizer;
 import lbfgsb.Result;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -57,13 +58,21 @@ public class MaximumLikelihood implements Spawnable {
     public MaximumLikelihood(final DifferentiableFunction likelihood, final Parameter variables) {
         this.likelihood = likelihood;
         this.variables = variables;
-        this.initial = variables.getParameterValues();
+        initial = new double[variables.getDimension()];
+        Arrays.fill(initial, 1);
+//        this.initial = variables.getParameterValues();
         this.optimizer = new Minimizer();
         final List<Bound> bounds = new ArrayList<Bound>(variables.getDimension());
         final Bounds<Double> myBounds = variables.getBounds();
         for (int i = 0; i < myBounds.getBoundsDimension(); ++i)
-            bounds.add(new Bound(myBounds.getLowerLimit(i), myBounds.getUpperLimit(i)));
+            bounds.add(new Bound(myBounds.getLowerLimit(i) / variables.getValue(i), myBounds.getUpperLimit(i) / variables.getValue(i)));
         optimizer.setBounds(bounds);
+        optimizer.setCorrectionsNo(10);
+        optimizer.getStopConditions().setFunctionReductionFactor(1.0);
+        optimizer.getStopConditions().setMaxGradientNorm(1E-8);
+//        optimizer.getStopConditions().setFunctionReductionFactorInactive();
+//        optimizer.getStopConditions().setMaxGradientNormInactive();
+        optimizer.getStopConditions().setMaxIterationsInactive();
         optimizer.setDebugLevel(2);
     }
 

@@ -58,7 +58,10 @@ public class LogLikelihoodFunction implements DifferentiableFunction {
     public FunctionValues getValues(double[] arguments) {
         for (int i = 0; i < variables.getDimension(); ++i)
             variables.setParameterValue(i, arguments[i] * scale[i]);
-        return new FunctionValues(-function.getLogLikelihood(), getGradient());
+        System.out.println(variables);
+        final FunctionValues fv = new FunctionValues(-function.getLogLikelihood(), getGradient());
+        System.out.println(fv.functionValue);
+        return fv;
     }
 
     private double[] getGradient() {
@@ -83,7 +86,29 @@ public class LogLikelihoodFunction implements DifferentiableFunction {
         variables.setParameterValue(index, a);
         final double fa = function.getLogLikelihood();
         variables.setParameterValue(index, x);
+        if (fb == Double.NEGATIVE_INFINITY && fa == Double.NEGATIVE_INFINITY)
+            return 0.0;
         return (fb - fa) / (b - a);
+    }
+
+    private double differentiate(final int index, final double f0) {
+        final double epsilon = MachineAccuracy.SQRT_EPSILON * Math.max(variables.getValue(index), 1);
+        final Bounds<Double> bounds = variables.getBounds();
+        final double upper = bounds.getUpperLimit(index);
+        final double lower = bounds.getLowerLimit(index);
+        final double x = variables.getValue(index);
+        final double xpe = x + epsilon;
+        final double b = xpe <= upper ? xpe : upper;
+        variables.setParameterValue(index, b);
+        final double fb = function.getLogLikelihood();
+        final double xme = x - epsilon;
+        final double a = xme >= lower ? xme : lower;
+        variables.setParameterValue(index, a);
+        final double fa = function.getLogLikelihood();
+        variables.setParameterValue(index, x);
+        if (fb == Double.NEGATIVE_INFINITY && fa == Double.NEGATIVE_INFINITY)
+            return 0.0;
+        return (fb - fa) / (b - x);
     }
 
     public static final XMLObjectParser PARSER = new AbstractXMLObjectParser() {

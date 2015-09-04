@@ -98,10 +98,10 @@ public class HKYSkylineIntegrator extends Integrator {
             };
         }
 
-        return integrateIntervals(H, Math.max(iTime, jTime));
+        return integrateIntervals(H, Math.max(iTime, jTime), mu);
     }
 
-    private double integrateIntervals(final H H, final double start) {
+    private double integrateIntervals(final H H, final double start, final double mu) {
 
         final PiecewiseConstantPopulation df = (PiecewiseConstantPopulation) populationModel.getDemographicFunction();
         final int m = df.getNumArguments();
@@ -115,7 +115,7 @@ public class HKYSkylineIntegrator extends Integrator {
         double integratedP = 0;
         for (int i = k; i < m; ++i) {
 
-            final double N = df.getEpochDemographic(i - 1);
+            final double N = df.getEpochDemographic(i - 1);// / mu;
             integratedP += g * Math.exp(previous / N) * (H.apply(current, N) - H.apply(previous, N));
 
             g *= Math.exp(-(current - previous) / N);
@@ -125,8 +125,10 @@ public class HKYSkylineIntegrator extends Integrator {
 
         }
 
-        final double N = df.getEpochDemographic(m - 1);
+        final double N = df.getEpochDemographic(m - 1);// / mu;
         integratedP -= g * Math.exp(previous / N) * H.apply(previous, N);
+
+        if (Double.isNaN(integratedP)) return 0.0;
 
         return integratedP;
 
