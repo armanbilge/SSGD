@@ -26,23 +26,20 @@
 
 package org.compevol.ssgd;
 
-import dr.inference.model.Bounds;
+import com.cureos.numerics.Calcfc;
 import dr.inference.model.Likelihood;
 import dr.inference.model.Parameter;
-import dr.math.MachineAccuracy;
 import dr.xml.AbstractXMLObjectParser;
 import dr.xml.ElementRule;
 import dr.xml.XMLObject;
 import dr.xml.XMLObjectParser;
 import dr.xml.XMLParseException;
 import dr.xml.XMLSyntaxRule;
-import lbfgsb.DifferentiableFunction;
-import lbfgsb.FunctionValues;
 
 /**
  * @author Arman Bilge <armanbilge@gmail.com>
  */
-public class LogLikelihoodFunction implements DifferentiableFunction {
+public class LogLikelihoodFunction implements Calcfc {
 
     private final Likelihood function;
     private final Parameter variables;
@@ -55,35 +52,14 @@ public class LogLikelihoodFunction implements DifferentiableFunction {
     }
 
     @Override
-    public FunctionValues getValues(double[] arguments) {
+    public double Compute(final int n, final int m, final double[] x, final double[] con) {
         for (int i = 0; i < variables.getDimension(); ++i)
-            variables.setParameterValue(i, arguments[i] * scale[i]);
-        return new FunctionValues(-function.getLogLikelihood(), getGradient());
-    }
-
-    private double[] getGradient() {
-        double[] gradient = new double[variables.getDimension()];
-        for (int i = 0; i < gradient.length; ++i)
-            gradient[i] = -differentiate(i) * scale[i];
-        return gradient;
-    }
-
-    private double differentiate(final int index) {
-        final double epsilon = MachineAccuracy.SQRT_EPSILON * Math.max(variables.getValue(index), 1);
-        final Bounds<Double> bounds = variables.getBounds();
-        final double upper = bounds.getUpperLimit(index);
-        final double lower = bounds.getLowerLimit(index);
-        final double x = variables.getValue(index);
-        final double xpe = x + epsilon;
-        final double b = xpe <= upper ? xpe : upper;
-        variables.setParameterValue(index, b);
-        final double fb = function.getLogLikelihood();
-        final double xme = x - epsilon;
-        final double a = xme >= lower ? xme : lower;
-        variables.setParameterValue(index, a);
-        final double fa = function.getLogLikelihood();
-        variables.setParameterValue(index, x);
-        return (fb - fa) / (b - a);
+            variables.setParameterValue(i, x[i] * scale[i]);
+        for (int i = 0; i < variables.getDimension(); ++i) {
+            con[i] = x[i] - variables.getBounds().getLowerLimit(i) / scale[i];
+            con[2 * i] = variables.getBounds().getUpperLimit(i) / scale[i] - x[i];
+        }
+        return -function.getLogLikelihood();
     }
 
     public static final XMLObjectParser PARSER = new AbstractXMLObjectParser() {

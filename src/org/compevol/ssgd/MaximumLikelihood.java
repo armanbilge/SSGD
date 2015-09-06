@@ -26,7 +26,8 @@
 
 package org.compevol.ssgd;
 
-import dr.inference.model.Bounds;
+import com.cureos.numerics.Calcfc;
+import com.cureos.numerics.Cobyla;
 import dr.inference.model.Parameter;
 import dr.xml.AbstractXMLObjectParser;
 import dr.xml.ElementRule;
@@ -35,36 +36,24 @@ import dr.xml.XMLObject;
 import dr.xml.XMLObjectParser;
 import dr.xml.XMLParseException;
 import dr.xml.XMLSyntaxRule;
-import lbfgsb.Bound;
-import lbfgsb.DifferentiableFunction;
-import lbfgsb.LBFGSBException;
-import lbfgsb.Minimizer;
-import lbfgsb.Result;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
 
 /**
  * @author Arman Bilge <armanbilge@gmail.com>
  */
 public class MaximumLikelihood implements Spawnable {
 
-    private final Minimizer optimizer;
-    private final DifferentiableFunction likelihood;
+//    private final Cobyla optimizer;
+    private final Calcfc likelihood;
     private final Parameter variables;
     private final double[] initial;
 
-    public MaximumLikelihood(final DifferentiableFunction likelihood, final Parameter variables) {
+    public MaximumLikelihood(final Calcfc likelihood, final Parameter variables) {
         this.likelihood = likelihood;
         this.variables = variables;
-        this.initial = variables.getParameterValues();
-        this.optimizer = new Minimizer();
-        final List<Bound> bounds = new ArrayList<Bound>(variables.getDimension());
-        final Bounds<Double> myBounds = variables.getBounds();
-        for (int i = 0; i < myBounds.getBoundsDimension(); ++i)
-            bounds.add(new Bound(myBounds.getLowerLimit(i), myBounds.getUpperLimit(i)));
-        optimizer.setBounds(bounds);
-        optimizer.setDebugLevel(2);
+        initial = new double[variables.getDimension()];
+        Arrays.fill(initial, 1);
     }
 
     @Override
@@ -74,12 +63,7 @@ public class MaximumLikelihood implements Spawnable {
 
     @Override
     public void run() {
-        try {
-            final Result result = optimizer.run(likelihood, initial);
-            System.out.println(result);
-        } catch (final LBFGSBException ex) {
-            throw new RuntimeException(ex);
-        }
+        Cobyla.FindMinimum(likelihood, variables.getSize(), 2 * variables.getSize(), initial, 1.0, 1E-6, 3, Integer.MAX_VALUE);
     }
 
     public static final XMLObjectParser PARSER = new AbstractXMLObjectParser() {
@@ -87,7 +71,7 @@ public class MaximumLikelihood implements Spawnable {
         @Override
         public Object parseXMLObject(final XMLObject xo) throws XMLParseException {
 
-            final DifferentiableFunction likelihood = (DifferentiableFunction) xo.getChild(DifferentiableFunction.class);
+            final Calcfc likelihood = (Calcfc) xo.getChild(Calcfc.class);
             final Parameter initial = (Parameter) xo.getChild(Parameter.class);
 
             return new MaximumLikelihood(likelihood, initial);
@@ -98,7 +82,7 @@ public class MaximumLikelihood implements Spawnable {
         public XMLSyntaxRule[] getSyntaxRules() {
             return rules;
         }
-        final XMLSyntaxRule[] rules = {new ElementRule(DifferentiableFunction.class), new ElementRule(Parameter.class)};
+        final XMLSyntaxRule[] rules = {new ElementRule(Calcfc.class), new ElementRule(Parameter.class)};
 
         @Override
         public String getParserDescription() {
