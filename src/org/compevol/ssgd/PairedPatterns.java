@@ -41,16 +41,18 @@ public class PairedPatterns implements Identifiable {
 
     private final DataType dataType;
     private final int stateCount;
+    private final int transitionCount;
     private final TaxonList taxa;
-    private final double[][] weights;
+    private final double[] weights;
 
     private String id;
 
     public PairedPatterns(final DataType dataType, final TaxonList taxa) {
         this.dataType = dataType;
         stateCount = dataType.getStateCount();
+        transitionCount = stateCount * stateCount;
         this.taxa = taxa;
-        weights = new double[taxa.getTaxonCount() * (taxa.getTaxonCount() - 1) / 2][stateCount * stateCount];
+        weights = new double[taxa.getTaxonCount() * (taxa.getTaxonCount() - 1) / 2 * transitionCount];
     }
 
     public double getPatternWeight(final Taxon a, final int i, final Taxon b, final int j) {
@@ -63,7 +65,7 @@ public class PairedPatterns implements Identifiable {
         else if (m > n)
             return getPatternWeight(b, j, a, i);
 
-        return weights[m + n * (n - 1) / 2 ][stateCount * i + j];
+        return weights[getIndex(m, n, i, j)];
 
     }
 
@@ -83,11 +85,12 @@ public class PairedPatterns implements Identifiable {
             return;
         }
 
-        final int x = m + n * (n - 1) / 2;
-        final int y = stateCount * i + j;
+        weights[getIndex(m, n, i, j)] += w;
 
-        weights[x][y] += w;
+    }
 
+    private int getIndex(final int m, int n, int i, int j) {
+        return (m + n * (n - 1) / 2) * transitionCount + stateCount * i + j;
     }
 
     public final DataType getDataType() {
@@ -103,7 +106,7 @@ public class PairedPatterns implements Identifiable {
         final double[] freqs = new double[stateCount];
 
         for (int i = 0; i < stateCount; ++i)
-            freqs[i] = weights[0][(stateCount+1) * i];
+            freqs[i] = weights[(stateCount+1) * i];
 
         final double sum = MathUtils.getTotal(freqs);
 
@@ -114,10 +117,7 @@ public class PairedPatterns implements Identifiable {
     }
 
     public final double getTotalWeight() {
-        double total = 0.0;
-        for (final double[] weights : this.weights)
-            total += MathUtils.getTotal(weights);
-        return total;
+        return MathUtils.getTotal(weights);
     }
 
     @Override
