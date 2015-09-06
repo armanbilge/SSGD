@@ -44,7 +44,6 @@ import java.util.Arrays;
  */
 public class MaximumLikelihood implements Spawnable {
 
-//    private final Cobyla optimizer;
     private final Calcfc likelihood;
     private final Parameter variables;
     private final double[] initial;
