@@ -44,6 +44,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.StringTokenizer;
 
 /**
@@ -72,10 +74,14 @@ public class LambertFormatParser extends AbstractXMLObjectParser {
             }
         }
 
-        final TaxonList taxa = (TaxonList) xo.getChild(TaxonList.class);
+        final TaxonList taxonList = (TaxonList) xo.getChild(TaxonList.class);
+
+        final Map<String,Taxon> taxa = new HashMap<String,Taxon>(taxonList.getTaxonCount());
+        for (int i = 0; i < taxonList.getTaxonCount(); ++i)
+            taxa.put(taxonList.getTaxonId(i), taxonList.getTaxon(i));
 
         final File file = new File(xo.getStringAttribute(FILENAME));
-        final PairedPatterns patterns = new PairedPatterns(Nucleotides.INSTANCE, taxa);
+        final PairedPatterns patterns = new PairedPatterns(Nucleotides.INSTANCE, taxonList);
 
         try {
 
@@ -89,25 +95,23 @@ public class LambertFormatParser extends AbstractXMLObjectParser {
             }
 
             for (int i = 0; i < N; ++i) {
+
+                final BufferedReader br = new BufferedReader(new FileReader(file));
+
+                SequenceRecord x = null;
+                for (int j = 0; j <= i; ++j) {
+                    if (j == i)
+                        x = new SequenceRecord(br.readLine());
+                    else
+                        br.readLine();
+                }
+
+                final Taxon a = taxa.get(x.getTaxonName());
+
                 for (int j = i+1; j < N; ++j) {
 
-                    final BufferedReader br = new BufferedReader(new FileReader(file));
-
-                    SequenceRecord x = null;
-                    SequenceRecord y = null;
-                    for (int k = 0; k <= j; ++k) {
-                        if (k == i)
-                            x = new SequenceRecord(br.readLine());
-                        else if (k == j)
-                            y = new SequenceRecord(br.readLine());
-                        else
-                            br.readLine();
-                    }
-
-                    br.close();
-
-                    final Taxon a = taxa.getTaxon(taxa.getTaxonIndex(x.getTaxonName()));
-                    final Taxon b = taxa.getTaxon(taxa.getTaxonIndex(y.getTaxonName()));
+                    final SequenceRecord y = new SequenceRecord(br.readLine());
+                    final Taxon b = taxa.get(y.getTaxonName());
 
                     patterns.addPattern(a, Nucleotides.A_STATE, b, Nucleotides.A_STATE, x.getACount());
                     patterns.addPattern(a, Nucleotides.C_STATE, b, Nucleotides.C_STATE, x.getCCount());
@@ -119,6 +123,8 @@ public class LambertFormatParser extends AbstractXMLObjectParser {
                                 b, Nucleotides.INSTANCE.getState(y.getSequence().charAt(k)));
 
                 }
+
+                br.close();
             }
 
         } catch (final IOException ex) {
