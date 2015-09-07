@@ -44,7 +44,9 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
 
@@ -85,32 +87,22 @@ public class LambertFormatParser extends AbstractXMLObjectParser {
 
         try {
 
-            final int N;
-            {
-                int i;
-                final BufferedReader br = new BufferedReader(new FileReader(file));
-                for (i = 0; br.readLine() != null; ++i);
-                br.close();
-                N = i;
-            }
+            final BufferedReader br = new BufferedReader(new FileReader(file));
+            final List<SequenceRecord> records = new ArrayList<SequenceRecord>();
+            String line;
+            while ((line = br.readLine()) != null)
+                records.add(new SequenceRecord(line));
+            br.close();
+
+            final int N = records.size();
 
             for (int i = 0; i < N; ++i) {
-
-                final BufferedReader br = new BufferedReader(new FileReader(file));
-
-                SequenceRecord x = null;
-                for (int j = 0; j <= i; ++j) {
-                    if (j == i)
-                        x = new SequenceRecord(br.readLine());
-                    else
-                        br.readLine();
-                }
-
+                final SequenceRecord x = records.get(i);
                 final Taxon a = taxa.get(x.getTaxonName());
 
                 for (int j = i+1; j < N; ++j) {
 
-                    final SequenceRecord y = new SequenceRecord(br.readLine());
+                    final SequenceRecord y = records.get(j);
                     final Taxon b = taxa.get(y.getTaxonName());
 
                     patterns.addPattern(a, Nucleotides.A_STATE, b, Nucleotides.A_STATE, x.getACount());
@@ -124,7 +116,6 @@ public class LambertFormatParser extends AbstractXMLObjectParser {
 
                 }
 
-                br.close();
             }
 
         } catch (final IOException ex) {
