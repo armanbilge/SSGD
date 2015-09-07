@@ -120,6 +120,11 @@ public class PairedPatterns implements Identifiable {
         return MathUtils.getTotal(weights);
     }
 
+    public void rescaleWeights(final double factor) {
+        for (int i = 0; i < weights.length; ++i)
+            weights[i] *= factor;
+    }
+
     @Override
     public String getId() {
         return id;
