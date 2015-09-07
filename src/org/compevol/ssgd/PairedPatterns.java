@@ -101,7 +101,7 @@ public class PairedPatterns implements Identifiable {
         return taxa;
     }
 
-    public final double[] getApproximateFrequencies() {
+    public double[] getApproximateFrequencies() {
 
         final double[] freqs = new double[stateCount];
 
@@ -116,7 +116,7 @@ public class PairedPatterns implements Identifiable {
         return freqs;
     }
 
-    public final double getTotalWeight() {
+    public double getTotalWeight() {
         return MathUtils.getTotal(weights);
     }
 
