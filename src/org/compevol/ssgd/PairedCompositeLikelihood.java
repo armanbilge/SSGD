@@ -38,6 +38,7 @@ import dr.evomodel.treelikelihood.TipStatesModel;
 import dr.inference.model.CompoundModel;
 import dr.inference.model.Likelihood;
 import dr.xml.AbstractXMLObjectParser;
+import dr.xml.AttributeRule;
 import dr.xml.ElementRule;
 import dr.xml.XMLObject;
 import dr.xml.XMLObjectParser;
@@ -167,14 +168,23 @@ public class PairedCompositeLikelihood extends Likelihood.Abstract {
 
     }
 
+    public void setScale(double scale) {
+        this.scale = scale;
+    }
+
     public static final XMLObjectParser PARSER = new AbstractXMLObjectParser() {
+
+        private static final String SCALE = "scale";
 
         @Override
         public Object parseXMLObject(XMLObject xo) throws XMLParseException {
-            return new PairedCompositeLikelihood((PairedPatterns) xo.getChild(PairedPatterns.class),
+            final PairedCompositeLikelihood likelihood = new PairedCompositeLikelihood(
+                    (PairedPatterns) xo.getChild(PairedPatterns.class),
                     (SiteModel) xo.getChild(SiteModel.class),
                     (Integrator) xo.getChild(Integrator.class),
                     (TipStatesModel) xo.getChild(TipStatesModel.class));
+            likelihood.setScale(xo.getAttribute(SCALE, 0.0));
+            return likelihood;
         }
 
         @Override
@@ -182,7 +192,8 @@ public class PairedCompositeLikelihood extends Likelihood.Abstract {
             return rules;
         }
         final XMLSyntaxRule[] rules = {new ElementRule(PairedPatterns.class), new ElementRule(SiteModel.class),
-                new ElementRule(Integrator.class), new ElementRule(TipStatesModel.class)};
+                new ElementRule(Integrator.class), new ElementRule(TipStatesModel.class),
+                AttributeRule.newDoubleRule(SCALE, true)};
 
 
         @Override
