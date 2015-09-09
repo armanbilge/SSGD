@@ -88,7 +88,7 @@ public class PairedPatternsSimulator {
                     final Taxon b = taxa.getTaxon(k);
                     final Sequence y = alignment.getSequence(jebl.evolution.taxa.Taxon.getTaxon(b.getId()));
 
-                    for (int l = 0; l < alignment.getSiteCount(); ++i)
+                    for (int l = 0; l < alignment.getSiteCount(); ++l)
                         patterns.addPattern(a, x.getState(l).getIndex(), b, y.getState(l).getIndex());
 
                 }
