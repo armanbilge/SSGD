@@ -47,6 +47,7 @@ public class SSGD implements Plugin {
         parsers.add(HKYSkylineIntegrator.PARSER);
         parsers.add(TaxonSpecificSequenceErrorModel.PARSER);
         parsers.add(new LambertFormatParser());
+        parsers.add(PairedPatternsSimulator.PARSER);
         parsers.add(new PairedPatternsFrequenciesParser());
         parsers.add(MaximumLikelihood.PARSER);
         parsers.add(LogLikelihoodFunction.PARSER);

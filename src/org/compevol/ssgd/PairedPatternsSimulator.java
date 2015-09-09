@@ -34,7 +34,14 @@ import dr.evolution.util.TaxonList;
 import dr.evomodel.coalescent.CoalescentSimulator;
 import dr.evomodel.coalescent.PiecewisePopulationModel;
 import dr.evomodel.sitemodel.SiteModel;
+import dr.xml.AbstractXMLObjectParser;
+import dr.xml.AttributeRule;
+import dr.xml.ElementRule;
+import dr.xml.XMLObject;
+import dr.xml.XMLParseException;
+import dr.xml.XMLSyntaxRule;
 import jebl.evolution.alignments.Alignment;
+import jebl.evolution.sequences.Sequence;
 
 /**
  * @author Arman Bilge <armanbilge@gmail.com>
@@ -46,13 +53,13 @@ public class PairedPatternsSimulator {
 
     private final TaxonList taxa;
     private final PiecewisePopulationModel populationModel;
-    private final int length;
+    private final int locusCount;
 
-    public PairedPatternsSimulator(final TaxonList taxa, final PiecewisePopulationModel populationModel, final SiteModel siteModel, final int length) {
+    public PairedPatternsSimulator(final TaxonList taxa, final PiecewisePopulationModel populationModel, final SiteModel siteModel, final int locusLength, final int locusCount) {
         this.taxa = taxa;
         this.populationModel = populationModel;
-        sequenceSimulator = new SeqGen(1, 1.0, siteModel.getFrequencyModel(), siteModel.getSubstitutionModel(), siteModel, 0.0);
-        this.length = length;
+        sequenceSimulator = new SeqGen(locusLength, 1.0, siteModel.getFrequencyModel(), siteModel.getSubstitutionModel(), siteModel, 0.0);
+        this.locusCount = locusCount;
     }
 
     private Tree simulateTree() {
@@ -67,19 +74,22 @@ public class PairedPatternsSimulator {
 
         final PairedPatterns patterns = new PairedPatterns(Nucleotides.INSTANCE, taxa);
 
-        for (int i = 0; i < length; ++i) {
+        for (int i = 0; i < locusCount; ++i) {
 
-            final Alignment site = simulateSite();
+            final Alignment alignment = simulateSite();
 
             for (int j = 0; j < taxa.getTaxonCount(); ++j) {
 
+                final Taxon a = taxa.getTaxon(j);
+                final Sequence x = alignment.getSequence(jebl.evolution.taxa.Taxon.getTaxon(a.getId()));
+
                 for (int k = j+1; k < taxa.getTaxonCount(); ++k) {
 
-                    final Taxon a = taxa.getTaxon(j);
                     final Taxon b = taxa.getTaxon(k);
-                    final int x = site.getSequence(jebl.evolution.taxa.Taxon.getTaxon(a.getId())).getState(0).getIndex();
-                    final int y = site.getSequence(jebl.evolution.taxa.Taxon.getTaxon(b.getId())).getState(0).getIndex();
-                    patterns.addPattern(a, x, b, y);
+                    final Sequence y = alignment.getSequence(jebl.evolution.taxa.Taxon.getTaxon(b.getId()));
+
+                    for (int l = 0; l < alignment.getSiteCount(); ++i)
+                        patterns.addPattern(a, x.getState(l).getIndex(), b, y.getState(l).getIndex());
 
                 }
 
@@ -90,5 +100,49 @@ public class PairedPatternsSimulator {
         return patterns;
 
     }
+
+    public static final AbstractXMLObjectParser PARSER = new AbstractXMLObjectParser() {
+
+        private static final String LENGTH = "length";
+        private static final String LOCI = "loci";
+
+        @Override
+        public Object parseXMLObject(final XMLObject xo) throws XMLParseException {
+            return new PairedPatternsSimulator(
+                    (TaxonList) xo.getChild(TaxonList.class),
+                    (PiecewisePopulationModel) xo.getChild(PiecewisePopulationModel.class),
+                    (SiteModel) xo.getChild(SiteModel.class),
+                    xo.getIntegerAttribute(LENGTH),
+                    xo.getIntegerAttribute(LOCI));
+        }
+
+        @Override
+        public XMLSyntaxRule[] getSyntaxRules() {
+            return rules;
+        }
+        private final XMLSyntaxRule[] rules = {
+                new ElementRule(TaxonList.class),
+                new ElementRule(PiecewisePopulationModel.class),
+                new ElementRule(SiteModel.class),
+                AttributeRule.newIntegerRule(LENGTH),
+                AttributeRule.newIntegerRule(LOCI)
+        };
+
+        @Override
+        public String getParserDescription() {
+            return "Simulates a PairedPatterns object.";
+        }
+
+        @Override
+        public Class getReturnType() {
+            return PairedPatterns.class;
+        }
+
+        @Override
+        public String getParserName() {
+            return "pairedPatternsSimulator";
+        }
+
+    };
 
 }
