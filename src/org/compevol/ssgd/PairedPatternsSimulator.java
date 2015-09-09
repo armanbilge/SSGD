@@ -113,7 +113,7 @@ public class PairedPatternsSimulator {
                     (PiecewisePopulationModel) xo.getChild(PiecewisePopulationModel.class),
                     (SiteModel) xo.getChild(SiteModel.class),
                     xo.getIntegerAttribute(LENGTH),
-                    xo.getIntegerAttribute(LOCI));
+                    xo.getIntegerAttribute(LOCI)).simulatePatterns();
         }
 
         @Override
