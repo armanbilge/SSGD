@@ -32,7 +32,7 @@ import dr.evolution.tree.Tree;
 import dr.evolution.util.Taxon;
 import dr.evolution.util.TaxonList;
 import dr.evomodel.coalescent.CoalescentSimulator;
-import dr.evomodel.coalescent.PiecewisePopulationModel;
+import dr.evomodel.coalescent.DemographicModel;
 import dr.evomodel.sitemodel.SiteModel;
 import dr.xml.AbstractXMLObjectParser;
 import dr.xml.AttributeRule;
@@ -52,18 +52,18 @@ public class PairedPatternsSimulator {
     private final SeqGen sequenceSimulator;
 
     private final TaxonList taxa;
-    private final PiecewisePopulationModel populationModel;
+    private final DemographicModel demographicModel;
     private final int locusCount;
 
-    public PairedPatternsSimulator(final TaxonList taxa, final PiecewisePopulationModel populationModel, final SiteModel siteModel, final int locusLength, final int locusCount) {
+    public PairedPatternsSimulator(final TaxonList taxa, final DemographicModel demographicModel, final SiteModel siteModel, final int locusLength, final int locusCount) {
         this.taxa = taxa;
-        this.populationModel = populationModel;
+        this.demographicModel = demographicModel;
         sequenceSimulator = new SeqGen(locusLength, 1.0, siteModel.getFrequencyModel(), siteModel.getSubstitutionModel(), siteModel, 0.0);
         this.locusCount = locusCount;
     }
 
     private Tree simulateTree() {
-        return coalescentSimulator.simulateTree(taxa, populationModel);
+        return coalescentSimulator.simulateTree(taxa, demographicModel);
     }
 
     private Alignment simulateSite() {
@@ -110,7 +110,7 @@ public class PairedPatternsSimulator {
         public Object parseXMLObject(final XMLObject xo) throws XMLParseException {
             return new PairedPatternsSimulator(
                     (TaxonList) xo.getChild(TaxonList.class),
-                    (PiecewisePopulationModel) xo.getChild(PiecewisePopulationModel.class),
+                    (DemographicModel) xo.getChild(DemographicModel.class),
                     (SiteModel) xo.getChild(SiteModel.class),
                     xo.getIntegerAttribute(LENGTH),
                     xo.getIntegerAttribute(LOCI)).simulatePatterns();
@@ -122,7 +122,7 @@ public class PairedPatternsSimulator {
         }
         private final XMLSyntaxRule[] rules = {
                 new ElementRule(TaxonList.class),
-                new ElementRule(PiecewisePopulationModel.class),
+                new ElementRule(DemographicModel.class),
                 new ElementRule(SiteModel.class),
                 AttributeRule.newIntegerRule(LENGTH),
                 AttributeRule.newIntegerRule(LOCI)
