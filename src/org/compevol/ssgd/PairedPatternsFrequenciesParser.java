@@ -40,7 +40,7 @@ public class PairedPatternsFrequenciesParser extends AbstractXMLObjectParser {
 
     @Override
     public Object parseXMLObject(final XMLObject xo) throws XMLParseException {
-        return new Parameter.Default(((PairedPatterns) xo.getChild(PairedPatterns.class)).getApproximateFrequencies());
+        return new Parameter.Default(((PairedPatterns) xo.getChild(PairedPatterns.class)).getFrequencies());
     }
 
     @Override

@@ -101,15 +101,30 @@ public class PairedPatterns implements Identifiable {
         return taxa;
     }
 
-    public double[] getApproximateFrequencies() {
+    public double[] getFrequencies() {
 
         final double[] freqs = new double[stateCount];
 
-        for (int i = 0; i < stateCount; ++i)
-            freqs[i] = weights[(stateCount+1) * i];
+        for (int i = 0; i < taxa.getTaxonCount(); ++i) {
+
+            for (int j = i+1; j < taxa.getTaxonCount(); ++j) {
+
+                for (int k = 0; k < stateCount; ++k) {
+
+                    for (int l = 0; l < stateCount; ++l) {
+
+                        final double w = weights[getIndex(i, j, k, l)];
+                        freqs[k] += w;
+                        freqs[l] += w;
+
+                    }
+
+                }
+            }
+
+        }
 
         final double sum = MathUtils.getTotal(freqs);
-
         for (int i = 0; i < stateCount; ++i)
             freqs[i] /= sum;
 
