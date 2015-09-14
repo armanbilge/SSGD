@@ -89,7 +89,7 @@ public class PairedPatterns implements Identifiable {
 
     }
 
-    private int getIndex(final int m, int n, int i, int j) {
+    private int getIndex(final int m, final int n, final int i, final int j) {
         return (m + n * (n - 1) / 2) * transitionCount + stateCount * i + j;
     }
 
