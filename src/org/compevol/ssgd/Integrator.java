@@ -44,7 +44,7 @@ public abstract class Integrator extends AbstractModel {
         super(name);
     }
 
-    private final class ParameterValue {
+    private static final class ParameterValue {
         private final int iState;
         private final double iTime;
         private final int jState;
