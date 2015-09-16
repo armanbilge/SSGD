@@ -55,9 +55,9 @@ public class LogLikelihoodFunction implements Calcfc {
     public double Compute(final int n, final int m, final double[] x, final double[] con) {
         for (int i = 0; i < variables.getDimension(); ++i)
             variables.setParameterValue(i, x[i] * scale[i]);
-        for (int i = 0; i < variables.getDimension(); ++i) {
+        for (int i = 0, j = variables.getDimension(); i < variables.getDimension(); ++i, ++j) {
             con[i] = x[i] - variables.getBounds().getLowerLimit(i) / scale[i];
-            con[2 * i] = variables.getBounds().getUpperLimit(i) / scale[i] - x[i];
+            con[j] = variables.getBounds().getUpperLimit(i) / scale[i] - x[i];
         }
         return -function.getLogLikelihood();
     }
