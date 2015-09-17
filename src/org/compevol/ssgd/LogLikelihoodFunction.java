@@ -26,7 +26,6 @@
 
 package org.compevol.ssgd;
 
-import com.cureos.numerics.Calcfc;
 import dr.inference.model.Likelihood;
 import dr.inference.model.Parameter;
 import dr.xml.AbstractXMLObjectParser;
@@ -35,11 +34,12 @@ import dr.xml.XMLObject;
 import dr.xml.XMLObjectParser;
 import dr.xml.XMLParseException;
 import dr.xml.XMLSyntaxRule;
+import org.apache.commons.math3.analysis.MultivariateFunction;
 
 /**
  * @author Arman Bilge <armanbilge@gmail.com>
  */
-public class LogLikelihoodFunction implements Calcfc {
+public class LogLikelihoodFunction implements MultivariateFunction {
 
     private final Likelihood function;
     private final Parameter variables;
@@ -48,22 +48,20 @@ public class LogLikelihoodFunction implements Calcfc {
     public LogLikelihoodFunction(final Likelihood function, final Parameter variables) {
         this.function = function;
         this.variables = variables;
-        scale = variables.getAttributeValue();
+        scale = variables.getParameterValues();
     }
 
     @Override
-    public double Compute(final int n, final int m, final double[] x, final double[] con) {
+    public double value(final double[] args) {
         for (int i = 0; i < variables.getDimension(); ++i)
-            variables.setParameterValue(i, x[i] * scale[i]);
-        for (int i = 0, j = variables.getDimension(); i < variables.getDimension(); ++i, ++j) {
-            con[i] = x[i] - variables.getBounds().getLowerLimit(i) / scale[i];
-            con[j] = variables.getBounds().getUpperLimit(i) / scale[i] - x[i];
-        }
-        return -function.getLogLikelihood();
+            variables.setParameterValue(i, args[i] * scale[i]);
+        final double logL = function.getLogLikelihood();
+        System.out.println(variables);
+        System.out.println(logL);
+        return logL;
     }
 
     public static final XMLObjectParser PARSER = new AbstractXMLObjectParser() {
-
 
         @Override
         public Object parseXMLObject(XMLObject xo) throws XMLParseException {
@@ -91,4 +89,5 @@ public class LogLikelihoodFunction implements Calcfc {
             return "logLikelihoodFunction";
         }
     };
+
 }
