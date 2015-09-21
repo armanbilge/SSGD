@@ -85,7 +85,9 @@ public class PairedPatterns implements Identifiable {
             return;
         }
 
-        weights[getIndex(m, n, i, j)] += w;
+        for (final int x : dataType.getStates(i))
+            for (final int y : dataType.getStates(j))
+                weights[getIndex(m, n, x, y)] += w;
 
     }
 
