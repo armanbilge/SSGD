@@ -79,7 +79,7 @@ public class HKYSkylineIntegrator extends Integrator {
         if (!betaKnown)
             calculateBeta();
 
-        final double tau = Math.abs(iTime - jTime);
+        final double tau = iTime + jTime;
 
         final H H;
         if (iState % 2 == jState % 2) { // transition
