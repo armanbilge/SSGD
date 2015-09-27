@@ -146,7 +146,7 @@ public class HKYSkylineIntegrator extends Integrator {
 
         final double betamu = beta * mu;
         final double twobetamuN = 2 * betamu * N;
-        final double mbetamutwotptau = -betamu * (2*t + tau);
+        final double mbetamutwotmtau = -betamu * (2*t - tau);
 
         final double freqi = frequencyModel.getFrequency(i);
         final double freqj = frequencyModel.getFrequency(j);
@@ -155,13 +155,13 @@ public class HKYSkylineIntegrator extends Integrator {
 
         final double freqkappam1p1 = freq * (kappa - 1) + 1;
 
-        return Math.exp(-t/N) * (pm * freqihat * Math.exp(mbetamutwotptau * freqkappam1p1) / (twobetamuN * freqkappam1p1 + 1) - freqj * ((1 - freq) * Math.exp(mbetamutwotptau) / (twobetamuN + 1) + freq)) / freq;
+        return Math.exp(-t/N) * (pm * freqihat * Math.exp(mbetamutwotmtau * freqkappam1p1) / (twobetamuN * freqkappam1p1 + 1) - freqj * ((1 - freq) * Math.exp(mbetamutwotmtau) / (twobetamuN + 1) + freq)) / freq;
 
     }
 
     private double transversionH(final double t, final double N, final int j, final double tau, final double mu) {
         final double betamu = beta * mu;
-        return frequencyModel.getFrequency(j) * Math.exp(-t/N) * (Math.exp(-betamu * (2*t + tau)) / (2 * betamu * N + 1) - 1);
+        return frequencyModel.getFrequency(j) * Math.exp(-t/N) * (Math.exp(-betamu * (2*t - tau)) / (2 * betamu * N + 1) - 1);
     }
 
     @Override
