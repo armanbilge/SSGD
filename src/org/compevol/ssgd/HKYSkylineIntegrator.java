@@ -184,6 +184,7 @@ public class HKYSkylineIntegrator extends Integrator {
     @Override
     protected void restoreState() {
         betaKnown = false;
+        fireModelChanged();
     }
 
     @Override
