@@ -26,20 +26,23 @@
 
 package org.compevol.ssgd;
 
+import dr.inference.model.Bounds;
 import dr.inference.model.Likelihood;
 import dr.inference.model.Parameter;
+import dr.math.MachineAccuracy;
 import dr.xml.AbstractXMLObjectParser;
 import dr.xml.ElementRule;
 import dr.xml.XMLObject;
 import dr.xml.XMLObjectParser;
 import dr.xml.XMLParseException;
 import dr.xml.XMLSyntaxRule;
-import org.apache.commons.math3.analysis.MultivariateFunction;
+import lbfgsb.DifferentiableFunction;
+import lbfgsb.FunctionValues;
 
 /**
  * @author Arman Bilge <armanbilge@gmail.com>
  */
-public class LogLikelihoodFunction implements MultivariateFunction {
+public class LogLikelihoodFunction implements DifferentiableFunction {
 
     private final Likelihood function;
     private final Parameter variables;
@@ -52,13 +55,37 @@ public class LogLikelihoodFunction implements MultivariateFunction {
     }
 
     @Override
-    public double value(final double[] args) {
+    public FunctionValues getValues(final double[] args) {
         for (int i = 0; i < variables.getDimension(); ++i)
             variables.setParameterValue(i, args[i] * scale[i]);
-        final double logL = function.getLogLikelihood();
-        System.out.println(variables);
-        System.out.println(logL);
-        return logL;
+        return new FunctionValues(-function.getLogLikelihood(), getGradient());
+    }
+
+    private double[] getGradient() {
+        double[] gradient = new double[variables.getDimension()];
+        for (int i = 0; i < gradient.length; ++i)
+            gradient[i] = -differentiate(i) * scale[i];
+        return gradient;
+    }
+
+    private double differentiate(final int index) {
+        final double epsilon = MachineAccuracy.SQRT_EPSILON * Math.max(variables.getValue(index), 1);
+        final Bounds<Double> bounds = variables.getBounds();
+        final double upper = bounds.getUpperLimit(index);
+        final double lower = bounds.getLowerLimit(index);
+        final double x = variables.getValue(index);
+        final double xpe = x + epsilon;
+        final double b = xpe <= upper ? xpe : upper;
+        variables.setParameterValue(index, b);
+        final double fb = function.getLogLikelihood();
+        final double xme = x - epsilon;
+        final double a = xme >= lower ? xme : lower;
+        variables.setParameterValue(index, a);
+        final double fa = function.getLogLikelihood();
+        variables.setParameterValue(index, x);
+        if (fb == Double.NEGATIVE_INFINITY && fa == Double.NEGATIVE_INFINITY)
+            return 0.0;
+        return (fb - fa) / (b - a);
     }
 
     public static final XMLObjectParser PARSER = new AbstractXMLObjectParser() {
