@@ -119,17 +119,23 @@ public class PairedCompositeLikelihood extends Likelihood.Abstract {
                     for (int j = 0; j < stateCount; ++j) {
 
                         final Taxon a = taxa.getTaxon(x);
-                        final double[] aPartial = new double[stateCount];
-                        System.arraycopy(partials[x], stateCount * i, aPartial, 0, stateCount);
-
                         final Taxon b = taxa.getTaxon(y);
-                        final double[] bPartial = new double[stateCount];
-                        System.arraycopy(partials[y], stateCount * j, bPartial, 0, stateCount);
+                        final double w = patterns.getPatternWeight(a, i, b, j);
 
-                        logL += patterns.getPatternWeight(a, i, b, j) * pairLogLikelihood(a, aPartial, b, bPartial);
+                        if (w > 0) {
+                            
+                            final double[] aPartial = new double[stateCount];
+                            System.arraycopy(partials[x], stateCount * i, aPartial, 0, stateCount);
 
-                        if (logL == Double.NEGATIVE_INFINITY)
-                            return Double.NEGATIVE_INFINITY;
+                            final double[] bPartial = new double[stateCount];
+                            System.arraycopy(partials[y], stateCount * j, bPartial, 0, stateCount);
+
+                            logL += w * pairLogLikelihood(a, aPartial, b, bPartial);
+
+                            if (logL == Double.NEGATIVE_INFINITY)
+                                return Double.NEGATIVE_INFINITY;
+
+                        }
 
                     }
 
