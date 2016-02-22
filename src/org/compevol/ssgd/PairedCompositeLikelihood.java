@@ -120,11 +120,11 @@ public class PairedCompositeLikelihood extends Likelihood.Abstract {
 
                         final Taxon a = taxa.getTaxon(x);
                         final double[] aPartial = new double[stateCount];
-                        System.arraycopy(partials[i], stateCount * i, aPartial, 0, stateCount);
+                        System.arraycopy(partials[x], stateCount * i, aPartial, 0, stateCount);
 
                         final Taxon b = taxa.getTaxon(y);
                         final double[] bPartial = new double[stateCount];
-                        System.arraycopy(partials[i], stateCount * j, bPartial, 0, stateCount);
+                        System.arraycopy(partials[y], stateCount * j, bPartial, 0, stateCount);
 
                         logL += patterns.getPatternWeight(a, i, b, j) * pairLogLikelihood(a, aPartial, b, bPartial);
 
